@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Project_4</string>
+    <string-array name="早餐">
+        <item>饅頭</item>
+        <item>吐司</item>
+        <item>麵包</item>
+        <item>漢堡</item>
+        <item>蛋餅</item>
+        <item>蔥抓餅</item>
+        <item>蔥油餅</item>
+    </string-array>
+</resources>

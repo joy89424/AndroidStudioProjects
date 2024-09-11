@@ -1,6 +1,7 @@
-package com.example.project_2;
+package com.example.project_3;
 
 import android.os.Bundle;
+
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -9,7 +10,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -25,23 +26,20 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        // 找到 RecyclerView 元件
         // 1. 初始化 RecyclerView
         RecyclerView recyclerView = findViewById(R.id.recyclerView);
 
-        // 准备数据源
-        // 2. 準備資料
-        List<String> dataList = Arrays.asList("Item 1", "Item 2", "Item 3", "Item 4");
+        // 2. 創建資料
+        List<News> newsList = new ArrayList<>();
+        newsList.add(new News("Breaking News", "This is a summary of breaking news.", "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Eo_circle_red_number-1.svg/768px-Eo_circle_red_number-1.svg.png"));
+        newsList.add(new News("Tech News", "This is a summary of tech news.", "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Eo_circle_red_number-2.svg/2048px-Eo_circle_red_number-2.svg.png"));
+        newsList.add(new News("World News", "This is a summary of world news.", "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Eo_circle_red_number-3.svg/2048px-Eo_circle_red_number-3.svg.png"));
 
-        // 创建 Adapter 并设置给 RecyclerView
-        // 3. 創建 Adapter 並設置資料
-        MyAdapter adapter = new MyAdapter(dataList);
+        // 3. 創建 NewsAdapter 並設置資料
+        NewsAdapter newsAdapter = new NewsAdapter(newsList);
+        recyclerView.setAdapter(newsAdapter);
 
-        // 4. 設定 RecyclerView 的 Adapter
-        recyclerView.setAdapter(adapter);
-
-        // 设置 LayoutManager，这里使用 LinearLayoutManager 来实现垂直列表
-        // 5. 設定 RecyclerView 的 LayoutManager
+        // 4. 設定 RecyclerView 的 LayoutManager
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
     }
 }
