@@ -1,7 +1,11 @@
 package com.example.project_4;
 
+import android.content.Intent;
+import android.net.wifi.aware.PublishConfig;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.Spinner;
 
 import androidx.activity.EdgeToEdge;
@@ -30,9 +34,21 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         // 初始化代碼
+        // 初始化 Spinner
         Spinner Spinner_1 = findViewById(R.id.Spinner_1);
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,R.array.早餐, androidx.appcompat.R.layout.support_simple_spinner_dropdown_item);
         Spinner_1.setAdapter(adapter);
+
+        // 初始化 Button
+        Button Button_1 = findViewById(R.id.Button_1);
+        Button_1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(MainActivity.this, SecondActivity.class);
+                startActivity(intent);
+                //finish(); // 結束 MainActivity，防止其佔用資源
+            }
+        });
     }
 
     // 當Activity即將顯示給用戶時調用。此時Activity還不可與用戶互動，但已準備好顯示在螢幕上。
