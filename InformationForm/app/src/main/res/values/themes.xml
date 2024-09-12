@@ -3,6 +3,12 @@
     <style name="Base.Theme.InformationForm" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <!-- Primary color (工具列的顏色) -->
+        <item name="colorPrimary">#2894FF</item>
+        <!-- Status bar color (狀態列的顏色) -->
+        <item name="colorPrimaryDark">#2894FF</item>
+        <!-- Accent color (次要顏色) -->
+        <item name="colorAccent">#FF4081</item>
     </style>
 
     <style name="Theme.InformationForm" parent="Base.Theme.InformationForm" />

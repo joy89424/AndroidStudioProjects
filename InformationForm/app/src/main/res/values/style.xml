@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Primary color (工具列的顏色) -->
+        <item name="colorPrimary">#2894FF</item>
+        <!-- Status bar color (狀態列的顏色) -->
+        <item name="colorPrimaryDark">#2894FF</item>
+        <!-- Accent color (次要顏色) -->
+        <item name="colorAccent">#FF4081</item>
+    </style>
+</resources>
