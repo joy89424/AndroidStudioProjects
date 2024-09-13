@@ -3,20 +3,24 @@ package com.example.informationform;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
 
-
-import java.util.List;
-
 public class PersonAdapter extends RecyclerView.Adapter<PersonAdapter.PersonViewHolder> {
 
     private List<Person> personList;
+    private OnDeleteClickListenr onDeleteClickListenr;
 
-    public PersonAdapter(List<Person> personList) {
+    public interface OnDeleteClickListenr {
+        void onDeleteClick(int postion);
+    }
+
+    public PersonAdapter(List<Person> personList, OnDeleteClickListenr listener) {
         this.personList = personList;
+        this.onDeleteClickListenr = listener;
     }
 
     @NonNull
@@ -31,20 +35,23 @@ public class PersonAdapter extends RecyclerView.Adapter<PersonAdapter.PersonView
         Person person = personList.get(position);
         holder.nameTextView.setText(person.getName());
         holder.ageTextView.setText(String.valueOf(person.getAge()));
+        holder.btnDelete.setOnClickListener(view -> onDeleteClickListenr.onDeleteClick(position));
     }
 
     @Override
     public int getItemCount() {
-        return personList.size();
+        return personList == null ? 0 : personList.size();
     }
 
     public static class PersonViewHolder extends RecyclerView.ViewHolder {
         TextView nameTextView, ageTextView;
+        Button btnDelete;
 
         public PersonViewHolder(@NonNull View itemView) {
             super(itemView);
-            nameTextView = itemView.findViewById(R.id.nameTextView);
-            ageTextView = itemView.findViewById(R.id.ageTextView);
+            nameTextView = itemView.findViewById(R.id.textName);
+            ageTextView = itemView.findViewById(R.id.textAge);
+            btnDelete = itemView.findViewById(R.id.btnDelete);
         }
     }
 }

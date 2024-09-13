@@ -1,6 +1,8 @@
 package com.example.informationform;
 
-public class Person {
+import java.io.Serializable;
+
+public class Person implements Serializable {
     private String name;
     private int age;
 
@@ -16,4 +18,5 @@ public class Person {
     public int getAge() {
         return age;
     }
+
 }
