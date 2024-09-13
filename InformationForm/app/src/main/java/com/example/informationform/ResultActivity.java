@@ -30,7 +30,7 @@ public class ResultActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
         // 從 Intent 中獲取搜尋結果
-        searchResult = (ArrayList<Person>) getIntent().getSerializableExtra("searchResult");
+        searchResult = (ArrayList<Person>) intent.getSerializableExtra("searchResult");
 
         // 設置 RecyclerView
         resultAdapter = new PersonAdapter(searchResult, new PersonAdapter.OnDeleteClickListenr() {

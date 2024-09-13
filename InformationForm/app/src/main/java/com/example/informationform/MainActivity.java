@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
             if(!name.isEmpty() && !ageString.isEmpty()) {
                 int age = Integer.parseInt(ageString);
                 personList.add(new Person(name, age));
-                adapter.notifyItemRemoved(personList.size() - 1);
+                adapter.notifyItemInserted(personList.size() - 1);
                 recyclerView.scrollToPosition(personList.size() - 1);
 
                 editName.setText("");
