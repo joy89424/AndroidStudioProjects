@@ -10,7 +10,8 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:text="姓名"
-        android:textSize="18sp" />
+        android:textSize="18sp"
+        android:gravity="center"/>
 
     <TextView
         android:id="@+id/textAge"
@@ -18,7 +19,8 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:text="年齡"
-        android:textSize="16sp" />
+        android:textSize="16sp"
+        android:gravity="center"/>
 
     <Button
         android:id="@+id/btnDelete"
@@ -26,7 +28,8 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:text="❌"
-        android:background="@android:color/transparent"/>
+        android:background="@android:color/transparent"
+        android:gravity="center"/>
 
 
 

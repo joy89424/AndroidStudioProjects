@@ -8,14 +8,19 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
-import java.util.List;
 
 public class ResultActivity extends AppCompatActivity {
 
     private RecyclerView resultRecyclerView; // RecyclerView 控件，用於顯示搜尋結果
     private PersonAdapter resultAdapter; // Adapter，用於處理 RecyclerView 的數據顯示
     private ArrayList<Person> searchResult; // 存儲搜尋結果的列表
+    private SharedPreferences sharedPreferences;
+    private SharedPreferences.Editor editor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,7 +33,7 @@ public class ResultActivity extends AppCompatActivity {
 
         // 初始化 SharedPreferences
         // 1. 獲取 SharedPreferences 物件
-        SharedPreferences sharedPreferences = getSharedPreferences("Person", MODE_PRIVATE);
+        SharedPreferences sharedPreferences = getSharedPreferences("MyPrefs", MODE_PRIVATE);
         // 2. 獲取 Editor 物件
         SharedPreferences.Editor editor = sharedPreferences.edit();
 
@@ -40,16 +45,21 @@ public class ResultActivity extends AppCompatActivity {
         resultAdapter = new PersonAdapter(searchResult, new PersonAdapter.OnDeleteClickListenr() {
             @Override
             public void onDeleteClick(int position) {
+                Person personToDelete = searchResult.get(position);
+
+                // 使用 MainActivity 中的 removeData 方法來刪除特定條目
+                MainActivity.removeData(ResultActivity.this, personToDelete.getId());
+                System.out.println(personToDelete.getId());
+
                 // 刪除點擊位置的項目
                 searchResult.remove(position);
-
-                // 將 SharedPreferences 的資料刪除
-                // 3.儲存數據
-                editor.remove(searchResult.get(position).getName());
-                editor.apply(); // 儲存變更
-
                 resultAdapter.notifyItemRemoved(position); // 通知 Adapter 刪除了某項目
                 resultAdapter.notifyDataSetChanged(); // 通知 Adapter 列表已更改
+
+                // 返回結果到 MainActivity
+                Intent resultIntent = new Intent();
+                resultIntent.putExtra("resultCode", 1);
+                setResult(RESULT_OK, resultIntent);
             }
         });
         resultRecyclerView.setAdapter(resultAdapter); // 設置 RecyclerView 的 Adapter
