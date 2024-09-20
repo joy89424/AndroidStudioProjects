@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace 'com.example.hw2_test'
+    namespace 'com.example.hw2'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.example.hw2_test"
+        applicationId "com.example.hw2"
         minSdk 24
         targetSdk 34
         versionCode 1
@@ -37,6 +37,4 @@ dependencies {
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
-    implementation 'com.github.bumptech.glide:glide:4.16.0'
-    annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
 }

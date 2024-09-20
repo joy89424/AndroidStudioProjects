@@ -1,4 +1,4 @@
-package com.example.hw2;
+package com.example.hw2_test;
 
 import android.content.Context;
 import android.net.Uri;
