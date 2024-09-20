@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:title="選擇操作"
+        android:enabled="false"/>
+    <group>
+        <item
+            android:id="@+id/action_open_camera"
+            android:title="開啟相機"/>
+        <item
+            android:id="@+id/action_choose_image"
+            android:title="選擇圖片"/>
+    </group>
+</menu>
