@@ -1,5 +1,6 @@
 package com.example.hw2;
 
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -26,9 +27,11 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ImageAdapter.OnItemClickListener {
 
     private static final int REQUEST_CODE_STORAGE = 100;
     private ActivityResultLauncher<Intent> getImageLauncher;
@@ -43,9 +46,9 @@ public class MainActivity extends AppCompatActivity {
         // 恢復保存的狀態
         if (savedInstanceState != null) {
             imageUris = savedInstanceState.getParcelableArrayList("imageUris");
-            if (imageUris == null) {
-                imageUris = new ArrayList<>();
-            }
+        } else {
+            // 從 SharePreference 載入圖片 URI
+            loadImageUrisFromPreference(); // 從 SharedPreferences 中恢復圖片 URI
         }
 
         // 設定狀態欄的顏色
@@ -62,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
         Button btnShowMenu = findViewById(R.id.btn_show_menu);
         // 為加號按鈕設置點擊監聽器
         btnShowMenu.setOnClickListener(view -> {
+
             // 創建一個 PopupMenu
             PopupMenu popupMenu = new PopupMenu(MainActivity.this, view);
 
@@ -93,6 +97,7 @@ public class MainActivity extends AppCompatActivity {
 
         // 初始化 RecyclerView 和適配器
         ImageAdapter imageAdapter = new ImageAdapter(imageUris);
+        imageAdapter.setOnItemClickListener(this); // 設置點擊事件
         getImageLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                 // 獲取選擇的圖片URI
@@ -153,5 +158,56 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "權限被拒絕", Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        saveImageUrisToPreferences();
+    }
+
+    // 儲存 imageUris 到 SharedPreferences
+    private void saveImageUrisToPreferences() {
+        // 取得 SharedPreferences 的實例
+        SharedPreferences sharedPreferences = getSharedPreferences("MyAppPreferences", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+
+        // 建立一個新的 Set 來儲存圖片 URI
+        Set<String> uriSet = new HashSet<>();
+        for (Uri uri: imageUris) {
+            uriSet.add(uri.toString());
+        }
+
+        // 儲存 Uri Set 到 SharedPreferences
+        editor.putStringSet("imageUris", uriSet);
+        editor.apply();
+    }
+
+    // 從 SharedPreferences 中恢復圖片 URI
+    private void loadImageUrisFromPreference() {
+        SharedPreferences sharedPreferences = getSharedPreferences("MyAppPreferences", MODE_PRIVATE);
+        Set<String> uriSet = sharedPreferences.getStringSet("imageUris", new HashSet<>());
+
+        imageUris.clear();
+        for (String uriString : uriSet) {
+            imageUris.add(Uri.parse(uriString));  // 將 String 轉換回 Uri
+        }
+    }
+
+    @Override
+    public void onItemClick(int position, Uri imageUri) {
+        // 創建 Fragment 的實例
+        ImageFragment imageFragment = new ImageFragment();
+
+        // 傳遞圖片 URI 給 Fragment();
+        Bundle bundle = new Bundle();
+        bundle.putString("imageUri", imageUri.toString());
+        imageFragment.setArguments(bundle);
+
+        // 使用 FragmentTransaction 將 Fragment 加入 Activity
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, imageFragment)
+                .addToBackStack(null)
+                .commit();
     }
 }
