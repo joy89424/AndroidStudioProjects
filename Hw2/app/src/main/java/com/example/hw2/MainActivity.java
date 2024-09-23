@@ -1,4 +1,3 @@
-// MainActivity.java
 package com.example.hw2;
 
 import android.content.SharedPreferences;
