@@ -1,10 +1,12 @@
 package com.example.hw2;
 
 import android.app.Dialog;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,6 +24,7 @@ public class ImageDialogFragment extends DialogFragment {
 
     private ImageView imageView;
     private Button recordButton;
+    private Uri imageUri;
 
     @Nullable
     @Override
@@ -33,20 +36,31 @@ public class ImageDialogFragment extends DialogFragment {
         imageView = view.findViewById(R.id.fragmentImageView);
         recordButton = view.findViewById(R.id.recordButton);
 
-        // 設定按鈕的點擊事件（未來實作錄音功能）
-        recordButton.setOnClickListener(view1 -> {
-            // 錄音功能邏輯（未來步驟）
-            Toast.makeText(getContext(), "Record button clicked", Toast.LENGTH_SHORT).show();
-        });
-
         // 從 Bundle 中獲取圖片 URI，並顯示圖片
         if (getArguments() != null) {
             String imageUriString = getArguments().getString("imageUri");
             if (imageUriString != null) {
                 Uri imageUri = Uri.parse(imageUriString);
+                System.out.println(imageUri);
                 loadImage(imageUri);
             }
         }
+
+        // 設定按鈕的點擊事件
+        recordButton.setOnClickListener(view1 -> {
+            String imageUriString = getArguments().getString("imageUri");
+            Uri imageUri = Uri.parse(imageUriString);
+            System.out.println(imageUri);
+            if (imageUri != null) {
+                Intent recordIntent = new Intent(getActivity(), RecordActivity.class);
+                Bundle bundle = new Bundle();
+                bundle.putString("imageUri", imageUri.toString());
+                recordIntent.putExtras(bundle);
+                startActivity(recordIntent);
+            } else {
+                Toast.makeText(getContext(), "圖片未加載", Toast.LENGTH_SHORT).show();
+            }
+        });
 
         return view;
     }
@@ -55,6 +69,7 @@ public class ImageDialogFragment extends DialogFragment {
         try {
             InputStream imageStream = getContext().getContentResolver().openInputStream(imageUri);
             Bitmap bitmap = BitmapFactory.decodeStream(imageStream);
+            System.out.println(bitmap);
             imageView.setImageBitmap(bitmap);
         } catch (Exception e) {
             e.printStackTrace();
