@@ -4,6 +4,13 @@
 
     <!--請求存取外部儲存的權限-->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <!--請求使用相機的權限-->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="true" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!--請求寫入外部儲存的權限-->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
     <application
         android:allowBackup="true"

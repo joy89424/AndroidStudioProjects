@@ -4,6 +4,7 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.widget.Button;
 import android.widget.PopupMenu;
 import android.widget.Toast;
@@ -33,7 +34,9 @@ import java.util.Set;
 
 public class MainActivity extends AppCompatActivity implements ImageAdapter.OnItemClickListener {
 
-    private static final int REQUEST_CODE_STORAGE = 100;
+    private static final int REQUEST_CODE_STORAGE_PERMISSION = 100;
+    private static final int REQUEST_CODE_CAMERA_PERMISSION = 101;
+    private static final int CAMERA_REQUEST_CODE = 102;
     private ActivityResultLauncher<Intent> getImageLauncher;
     private List<Uri> imageUris = new ArrayList<>();
 
@@ -75,7 +78,15 @@ public class MainActivity extends AppCompatActivity implements ImageAdapter.OnIt
             // 處理選單項目的點擊事件
             popupMenu.setOnMenuItemClickListener(item -> {
                 if (item.getItemId() == R.id.action_open_camera) {
-                    Toast.makeText(MainActivity.this, "開啟相機功能 (未實作)", Toast.LENGTH_SHORT).show();
+                    // 檢查權限
+                    checkCameraPermission();
+
+                    // 開啟相機並拍照
+                    Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                    if (cameraIntent.resolveActivity(getPackageManager()) != null) {
+                        startActivityForResult(cameraIntent, CAMERA_REQUEST_CODE);
+                    }
+
                     return true;
                 } else if (item.getItemId() == R.id.action_choose_image) {
                     // 檢查權限
@@ -143,7 +154,15 @@ public class MainActivity extends AppCompatActivity implements ImageAdapter.OnIt
     private void checkStoragePermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             // 如果尚未獲得權限，則請求權限
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_CODE_STORAGE);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_CODE_STORAGE_PERMISSION);
+        }
+    }
+
+    // 用來檢查應用程式是否已獲得相機的權限
+    private void checkCameraPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            // 如果尚未獲得權限，則請求權限
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, REQUEST_CODE_CAMERA_PERMISSION);
         }
     }
 
@@ -151,7 +170,7 @@ public class MainActivity extends AppCompatActivity implements ImageAdapter.OnIt
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_CODE_STORAGE) {
+        if (requestCode == REQUEST_CODE_STORAGE_PERMISSION || requestCode == REQUEST_CODE_CAMERA_PERMISSION) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(this,"權限已獲得", Toast.LENGTH_SHORT).show();
             } else {
