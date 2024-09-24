@@ -41,7 +41,6 @@ public class ImageDialogFragment extends DialogFragment {
             String imageUriString = getArguments().getString("imageUri");
             if (imageUriString != null) {
                 Uri imageUri = Uri.parse(imageUriString);
-                System.out.println(imageUri);
                 loadImage(imageUri);
             }
         }
@@ -50,7 +49,7 @@ public class ImageDialogFragment extends DialogFragment {
         recordButton.setOnClickListener(view1 -> {
             String imageUriString = getArguments().getString("imageUri");
             Uri imageUri = Uri.parse(imageUriString);
-            System.out.println(imageUri);
+
             if (imageUri != null) {
                 Intent recordIntent = new Intent(getActivity(), RecordActivity.class);
                 Bundle bundle = new Bundle();
@@ -69,7 +68,6 @@ public class ImageDialogFragment extends DialogFragment {
         try {
             InputStream imageStream = getContext().getContentResolver().openInputStream(imageUri);
             Bitmap bitmap = BitmapFactory.decodeStream(imageStream);
-            System.out.println(bitmap);
             imageView.setImageBitmap(bitmap);
         } catch (Exception e) {
             e.printStackTrace();
@@ -80,8 +78,16 @@ public class ImageDialogFragment extends DialogFragment {
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         Dialog dialog = super.onCreateDialog(savedInstanceState);
+
+        dialog.setOnShowListener(dialogInterface -> {
+            int width = (int) (getResources().getDisplayMetrics().widthPixels * 0.90); // 90% 螢幕寬度
+            int height = (int) (getResources().getDisplayMetrics().heightPixels * 0.90); // 90% 螢幕高度
+            dialog.getWindow().setLayout(width, height);
+        });
+        /*
         // 設置對話框的樣式，這裡設置為全屏
         dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        */
         return dialog;
     }
 }

@@ -46,7 +46,6 @@ public class RecordActivity extends AppCompatActivity {
             String imageUriString = bundle.getString("imageUri");
             if (imageUriString != null) {
                 Uri imageUri = Uri.parse(imageUriString);
-                System.out.println(imageUri);
                 loadImage(imageUri);
             } else {
                 Toast.makeText(this, "未接收到圖片 URI", Toast.LENGTH_SHORT).show();
@@ -64,7 +63,6 @@ public class RecordActivity extends AppCompatActivity {
         try {
             InputStream imageStream = getContentResolver().openInputStream(imageUri);
             Bitmap bitmap = BitmapFactory.decodeStream(imageStream);
-            System.out.println(bitmap);
             ivImage.setImageBitmap(bitmap);
         } catch (Exception e) {
             e.printStackTrace();
