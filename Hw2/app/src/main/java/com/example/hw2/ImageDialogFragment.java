@@ -24,6 +24,8 @@ public class ImageDialogFragment extends DialogFragment {
 
     private ImageView imageView;
     private Button recordButton;
+    private Button editPhotoButton;
+    private Button newButton;
     private Uri imageUri;
 
     @Nullable
@@ -32,9 +34,11 @@ public class ImageDialogFragment extends DialogFragment {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_image, container, false);
 
-        // 初始化 imageView 和 recordButton
+        // 初始化
         imageView = view.findViewById(R.id.fragmentImageView);
         recordButton = view.findViewById(R.id.recordButton);
+        editPhotoButton = view.findViewById(R.id.editButton);
+        newButton = view.findViewById(R.id.newButton);
 
         // 從 Bundle 中獲取圖片 URI，並顯示圖片
         if (getArguments() != null) {
@@ -45,7 +49,7 @@ public class ImageDialogFragment extends DialogFragment {
             }
         }
 
-        // 設定按鈕的點擊事件
+        // 設定錄音按鈕的點擊事件
         recordButton.setOnClickListener(view1 -> {
             String imageUriString = getArguments().getString("imageUri");
             Uri imageUri = Uri.parse(imageUriString);
@@ -59,6 +63,27 @@ public class ImageDialogFragment extends DialogFragment {
             } else {
                 Toast.makeText(getContext(), "圖片未加載", Toast.LENGTH_SHORT).show();
             }
+        });
+
+        // 設定編輯相片按鈕的點擊事件
+        editPhotoButton.setOnClickListener(view1 -> {
+            String imageUriString = getArguments().getString("imageUri");
+            Uri imageUri = Uri.parse(imageUriString);
+
+            if (imageUri != null) {
+                Intent editPhotoIntent = new Intent(getActivity(), EditPhotoActivity.class);
+                Bundle bundle = new Bundle();
+                bundle.putString("imageUri", imageUri.toString());
+                editPhotoIntent.putExtras(bundle);
+                startActivity(editPhotoIntent);
+            } else {
+                Toast.makeText(getContext(), "圖片未加載", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // 設定新增相片按鈕的點擊事件
+        newButton.setOnClickListener(view1 -> {
+            dismiss();
         });
 
         return view;
