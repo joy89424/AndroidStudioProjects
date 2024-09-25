@@ -2,6 +2,7 @@ package com.example.hw2;
 
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -102,9 +103,46 @@ public class MainActivity extends AppCompatActivity implements ImageAdapter.OnIt
             popupMenu.show();
         });
 
-        // 初始化圖片適配器並設置點擊監聽器
+        // 初始化圖片適配器
         ImageAdapter imageAdapter = new ImageAdapter(imageUris);
+
+        // 設置點擊監聽器
         imageAdapter.setOnItemClickListener(this);
+
+        // 設置播放按鈕點擊監聽器
+        imageAdapter.setOnPlayButtonClickListener(((position, imageUri) -> {
+            // 從 SharedPreferences 中取得圖片對應的錄音檔路徑
+            SharedPreferences sharedPreferences = getSharedPreferences("RecordingData", MODE_PRIVATE);
+            String imageUriString = imageUri.toString();
+            String audioFilepath = sharedPreferences.getString(imageUriString, null);
+
+            if (audioFilepath != null) {
+                // 開始播放對應的錄音檔
+                MediaPlayer mediaPlayer = new MediaPlayer();
+                try {
+                    // 設置錄音檔路徑為數據源
+                    mediaPlayer.setDataSource(audioFilepath);
+
+                    // 准備播放器
+                    mediaPlayer.prepare();
+
+                    // 開始播放
+                    mediaPlayer.start();
+                    Toast.makeText(MainActivity.this, "正在播放錄音", Toast.LENGTH_SHORT).show();
+
+                    // 播放完畢後自動釋放資源
+                    mediaPlayer.setOnCompletionListener(mediaPlayer1 -> {
+                        mediaPlayer.release();
+                        Toast.makeText(MainActivity.this, "錄音播放完畢", Toast.LENGTH_SHORT).show();
+                    });
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    Toast.makeText(MainActivity.this, "無法播放錄音", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(MainActivity.this, "未找到對應的錄音檔", Toast.LENGTH_SHORT).show();
+            }
+        }));
 
         // 初始化圖片選擇器的 ActivityResultLauncher
         getImageLauncher = registerForActivityResult(
@@ -195,7 +233,7 @@ public class MainActivity extends AppCompatActivity implements ImageAdapter.OnIt
         }
     }
 
-    // 檢查並請求儲存權限
+    // 檢查版本並請求儲存權限，獲得權限後開啟圖片選擇器
     private void checkStoragePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             // Android 13+ 使用 READ_MEDIA_IMAGES
@@ -242,7 +280,7 @@ public class MainActivity extends AppCompatActivity implements ImageAdapter.OnIt
         return FileProvider.getUriForFile(this, "com.example.hw2.fileprovider", imageFile); // 轉換為 URI
     }
 
-    // 檢查相機權限
+    // 請求相機權限，獲得權限後開啟相機
     private void checkCameraPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, REQUEST_CODE_CAMERA_PERMISSION);
