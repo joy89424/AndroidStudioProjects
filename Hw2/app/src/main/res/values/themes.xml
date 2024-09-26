@@ -7,7 +7,7 @@
 
     <style name="CircleButtonStyle" parent="Widget.Material3.Button">
         <item name="android:background">@drawable/circle_button_background</item> <!-- 使用 drawable 背景 -->
-        <item name="backgroundTint">#46A3FF</item>
+        <item name="backgroundTint">#46A3FF</item>W
     </style>
 
     <style name="Theme.Hw2" parent="Base.Theme.Hw2" />

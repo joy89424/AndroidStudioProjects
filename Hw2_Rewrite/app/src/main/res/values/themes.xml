@@ -1,0 +1,15 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.Hw2_Rewrite" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here. -->
+        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+    </style>
+
+    <!-- Base Circle Button Style theme. -->
+    <style name="CircleButtonStyle" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/circle_button_background</item>  <!-- 使用 drawable 背景 -->
+        <item name="backgroundTint">#46A3FF</item>
+    </style>
+
+    <style name="Theme.Hw2_Rewrite" parent="Base.Theme.Hw2_Rewrite" />
+</resources>
