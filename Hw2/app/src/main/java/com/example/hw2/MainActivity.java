@@ -8,6 +8,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.PopupMenu;
 import android.widget.Toast;
@@ -34,9 +35,12 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
 
 public class MainActivity extends AppCompatActivity implements ImageAdapter.OnItemClickListener {
 
@@ -47,12 +51,14 @@ public class MainActivity extends AppCompatActivity implements ImageAdapter.OnIt
     // 儲存拍攝的圖片 URI
     private Uri photoUri;
 
-    // 用於啟動圖片選擇器和相機的 ActivityResultLauncher
+    // 用於啟動圖片選擇器、相機和錄音的 ActivityResultLauncher
     private ActivityResultLauncher<Intent> getImageLauncher;
     private ActivityResultLauncher<Intent> cameraLauncher;
+    private ActivityResultLauncher<Intent> recordLauncher;
 
     // 儲存圖片 URI 的列表
     private List<Uri> imageUris = new ArrayList<>();
+    private List<String> audioFilePaths = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,7 +72,9 @@ public class MainActivity extends AppCompatActivity implements ImageAdapter.OnIt
         } else {
             // 從 SharedPreferences 載入圖片 URI
             loadImageUrisFromPreference();
+            loadAudioFilePathsFromPreference();
         }
+        audioFilePaths = new ArrayList<>(Collections.nCopies(imageUris.size(), null));
 
         // 設定狀態欄的顏色
         getWindow().setStatusBarColor(Color.parseColor("#46A3FF"));
@@ -144,6 +152,7 @@ public class MainActivity extends AppCompatActivity implements ImageAdapter.OnIt
             }
         }));
 
+
         // 初始化圖片選擇器的 ActivityResultLauncher
         getImageLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -153,6 +162,8 @@ public class MainActivity extends AppCompatActivity implements ImageAdapter.OnIt
                         if (selectedImageUri != null) {
                             // 將選擇的圖片 URI 加入到列表中
                             imageUris.add(selectedImageUri);
+                            // 將 audioFilePaths 相應位置設為 null
+                            audioFilePaths.add(null);
                             // 通知適配器有新項目插入
                             imageAdapter.notifyItemInserted(imageUris.size() - 1);
                         }
@@ -166,6 +177,8 @@ public class MainActivity extends AppCompatActivity implements ImageAdapter.OnIt
                         if (photoUri != null) {
                             // 將拍攝的圖片 URI 加入列表
                             imageUris.add(photoUri);
+                            // 將 audioFilePaths 相應位置設為 null
+                            audioFilePaths.add(null);
                             // 通知適配器有新項目插入
                             imageAdapter.notifyItemInserted(imageUris.size() - 1);
                             Toast.makeText(MainActivity.this, "照片已儲存", Toast.LENGTH_SHORT).show();
@@ -174,6 +187,28 @@ public class MainActivity extends AppCompatActivity implements ImageAdapter.OnIt
                         Toast.makeText(MainActivity.this, "拍照失敗", Toast.LENGTH_SHORT).show();
                     }
                 });
+
+        // 在錄音完成後
+        recordLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(), result -> {
+                    if (result.getResultCode() == RESULT_OK) {
+                        String audioFilePath = result.getData().getStringExtra("audioFilePath");
+                        Log.d("MainActivity", "Audio File Path: " + audioFilePath);
+                        int imagePosition = result.getData().getIntExtra("imagePosition", -1);
+                        if (imagePosition != -1) {
+                            audioFilePaths.set(imagePosition, audioFilePath);
+
+                            // 儲存到 SharedPreferences，使用 imageUri 作為鍵
+                            SharedPreferences sharedPreferences = getSharedPreferences("RecordingData", MODE_PRIVATE);
+                            SharedPreferences.Editor editor = sharedPreferences.edit();
+                            String imageUriString = imageUris.get(imagePosition).toString(); // 獲取對應的 URI
+                            editor.putString(imageUriString, audioFilePath);
+                            editor.apply(); // 提交變更
+                        }
+                    }
+                });
+
+
 
         // 初始化 RecyclerView 並設置佈局管理器
         RecyclerView recyclerView = findViewById(R.id.recycler_view);
@@ -190,6 +225,7 @@ public class MainActivity extends AppCompatActivity implements ImageAdapter.OnIt
         super.onSaveInstanceState(outState);
         outState.putParcelable("photoUri", photoUri);  // 保存 photoUri
         outState.putParcelableArrayList("imageUris", new ArrayList<>(imageUris));
+        outState.putStringArrayList("audioFilePaths", new ArrayList<>(audioFilePaths));
     }
 
     @Override
@@ -207,29 +243,69 @@ public class MainActivity extends AppCompatActivity implements ImageAdapter.OnIt
     protected void onPause() {
         super.onPause();
         saveImageUrisToPreferences(); // 暫停時保存圖片 URI
+        saveAudioFilePathsToPreferences();
     }
 
     // 儲存 imageUris 到 SharedPreferences
     private void saveImageUrisToPreferences() {
         SharedPreferences sharedPreferences = getSharedPreferences("MyAppPreferences", MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
-        // 儲存 imageUris 列表中的所有 URI
-        Set<String> uriSet = new HashSet<>();
+
+        // 將 imageUris 轉換為 String 列表
+        List<String> uriStrings = new ArrayList<>();
         for (Uri uri : imageUris) {
-            uriSet.add(uri.toString());
+            uriStrings.add(uri.toString());
         }
-        editor.putStringSet("imageUris", uriSet);
+
+        // 使用 Gson 將 String 列表轉換為 JSON
+        Gson gson = new Gson();
+        String json = gson.toJson(uriStrings);
+
+        editor.putString("imageUris", json);
         editor.apply();  // 提交變更
     }
+
 
     // 從 SharedPreferences 中恢復圖片 URI
     private void loadImageUrisFromPreference() {
         SharedPreferences sharedPreferences = getSharedPreferences("MyAppPreferences", MODE_PRIVATE);
-        Set<String> uriSet = sharedPreferences.getStringSet("imageUris", null);
-        if (uriSet != null) {
-            for (String uriString : uriSet) {
-                imageUris.add(Uri.parse(uriString));  // 將字串轉換為 URI 並加入 imageUris 列表
+        String json = sharedPreferences.getString("imageUris", null);
+
+        if (json != null) {
+            Gson gson = new Gson();
+            Type type = new TypeToken<List<String>>() {}.getType(); // 使用 List<String>
+            List<String> uriStrings = gson.fromJson(json, type); // 將 JSON 轉換回 List<String>
+
+            // 將 String 列表轉換為 Uri 列表
+            imageUris = new ArrayList<>();
+            if (uriStrings != null) {
+                for (String uriString : uriStrings) {
+                    imageUris.add(Uri.parse(uriString)); // 將 String 轉換回 Uri
+                }
             }
+        }
+
+        if (imageUris == null) {
+            imageUris = new ArrayList<>();  // 確保不為 null
+        }
+    }
+
+    private void saveAudioFilePathsToPreferences() {
+        SharedPreferences sharedPreferences = getSharedPreferences("MyAppPreferences", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        Gson gson = new Gson();
+        String json = gson.toJson(audioFilePaths);
+        editor.putString("audioFilePaths", json);
+        editor.apply();  // 提交變更
+    }
+
+    private void loadAudioFilePathsFromPreference() {
+        SharedPreferences sharedPreferences = getSharedPreferences("MyAppPreferences", MODE_PRIVATE);
+        String json = sharedPreferences.getString("audioFilePaths", null);
+        Type type = new TypeToken<List<String>>() {}.getType();
+        audioFilePaths = new Gson().fromJson(json, type);
+        if (audioFilePaths == null) {
+            audioFilePaths = new ArrayList<>(Collections.nCopies(imageUris.size(), null)); // 確保不為 null
         }
     }
 

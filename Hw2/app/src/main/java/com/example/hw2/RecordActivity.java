@@ -1,6 +1,7 @@
 package com.example.hw2;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -23,7 +24,6 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import java.io.InputStream;
-
 import android.media.MediaRecorder;
 import android.media.MediaPlayer;
 import java.io.IOException;
@@ -75,7 +75,8 @@ public class RecordActivity extends AppCompatActivity {
         Button saveButton = findViewById(R.id.btnSaveRecording);
 
         // 取得存儲錄音的檔案路徑
-        audioFilePath = getExternalCacheDir().getAbsolutePath() + "/trmp_audio.3dp";
+        String timestamp = String.valueOf(System.currentTimeMillis());
+        audioFilePath = getExternalCacheDir().getAbsolutePath() + "/audio_" + timestamp + ".3gp";
 
         // 接收並顯示圖片
         Bundle bundle = getIntent().getExtras();
@@ -88,6 +89,7 @@ public class RecordActivity extends AppCompatActivity {
                 Toast.makeText(this, "未接收到圖片 URI", Toast.LENGTH_SHORT).show();
             }
         }
+
 
         // 開始錄音/停止錄音按鈕的邏輯
         recordButton.setOnClickListener(view -> {
@@ -111,12 +113,11 @@ public class RecordActivity extends AppCompatActivity {
         // 儲存錄音的邏輯
         saveButton.setOnClickListener(view -> {
             if (!isRecording) {
-                saveRecordWithImage();
+                saveRecordWithImage(); // 儲存錄音檔路徑與圖片 URI 的關聯
             } else {
                 Toast.makeText(this, "請先停止錄音再保存", Toast.LENGTH_SHORT).show();
             }
         });
-
     }
 
     // 請求麥克風權限
@@ -149,7 +150,7 @@ public class RecordActivity extends AppCompatActivity {
             ivImage.setImageBitmap(bitmap);
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(this, "Fail to load image", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "載入圖片失敗", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -200,22 +201,26 @@ public class RecordActivity extends AppCompatActivity {
         playButton.setText("播放錄音"); // 停止後按鈕文字變更為“播放錄音”
     }
 
-    // 定義一個方法來儲存圖片URI與錄音檔的路徑
+    // 儲存圖片 URI 與最新的錄音檔路徑
     private void saveRecordWithImage() {
-        // 確保有圖片和錄音檔的路徑
         if (ivImage.getDrawable() != null && audioFilePath != null) {
             Bundle bundle = getIntent().getExtras();
             if (bundle != null) {
                 String imageUriString = bundle.getString("imageUri");
                 if (imageUriString != null) {
-                    // 使用 SharedPreferences 儲存圖片 URI 和錄音檔路徑
                     SharedPreferences sharedPreferences = getSharedPreferences("RecordingData", MODE_PRIVATE);
                     SharedPreferences.Editor editor = sharedPreferences.edit();
-                    editor.putString(imageUriString, audioFilePath); // 將圖片的 URI 與對應的錄音檔路徑進行綁定
+                    editor.putString(imageUriString, audioFilePath); // 儲存圖片 URI 與最新的錄音檔路徑
                     editor.apply();
 
+                    // 傳回錄音檔案路徑和對應的圖片 URI
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra("audioFilePath", audioFilePath); // 錄音檔案的路徑
+                    resultIntent.putExtra("imageUri", imageUriString); // 對應的圖片 URI
+                    setResult(RESULT_OK, resultIntent);
+                    finish(); // 結束 RecordActivity
+
                     Toast.makeText(this, "錄音已儲存", Toast.LENGTH_SHORT).show();
-                    finish();
                 } else {
                     Toast.makeText(this, "無法儲存，未找到圖片 URI", Toast.LENGTH_SHORT).show();
                 }
@@ -224,5 +229,4 @@ public class RecordActivity extends AppCompatActivity {
             Toast.makeText(this, "請確保錄音和圖片已完成", Toast.LENGTH_SHORT).show();
         }
     }
-
 }
