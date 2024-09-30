@@ -6,12 +6,16 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.PersistableBundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.PopupMenu;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -19,6 +23,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -33,7 +38,11 @@ public class MainActivity extends AppCompatActivity {
     private Button showPopMenuButton;
     PopupMenu popupMenu;
 
-    private ArrayList<Uri> imageUrilist = new ArrayList<>();
+    // 定義 ActivityResultLauncher 來處理圖片選擇結果
+    private ActivityResultLauncher<Intent> imagePickerLauncher;
+
+
+    private ArrayList<Uri> imageUriList = new ArrayList<>();
     private ImageAdapter imageAdapter;
 
     @Override
@@ -52,17 +61,41 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
+        // 恢復保存的狀態
+        if (savedInstanceState != null) {
+            ArrayList<Uri> savedUriList = savedInstanceState.getParcelableArrayList("imageUriList");
+            if (savedUriList != null) {
+                imageUriList = savedUriList;
+            }
+        }
+
         // 初始化
         showPopMenuButton = findViewById(R.id.showPopMenuButton);
         recyclerView = findViewById(R.id.recyclerView);
-        imageAdapter = new ImageAdapter(imageUrilist);
-        recyclerView.setAdapter(imageAdapter);
+        imageAdapter = new ImageAdapter(imageUriList);
 
-        // 按下按鈕後的行為
+
+        // 設置RecyclerView佈局管理器
+        GridLayoutManager gridLayoutManager = new GridLayoutManager(this, 2); // 每行兩列
+        recyclerView.setLayoutManager(gridLayoutManager);
+        recyclerView.setAdapter(imageAdapter); // 設置適配器
+
+        // 初始化 PopupMenu
         showPopMenuButton.setOnClickListener(v -> {
-            showPopMenu(v);
+            showPopMenu(v); // 按下按鈕後的行為
         });
 
+        // 初始化圖片選擇器
+        imagePickerLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+            if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                Uri selectedImageUri = result.getData().getData();
+                if (selectedImageUri != null) {
+                    imageUriList.add(selectedImageUri); // 將圖片 URI 加入列表
+                    imageAdapter.notifyItemInserted(imageUriList.size()-1);
+                    Toast.makeText(this, "圖片選擇成功", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
 
     }
 
@@ -89,6 +122,27 @@ public class MainActivity extends AppCompatActivity {
         popupMenu.show();
     }
 
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putParcelableArrayList("imageUriList", imageUriList);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        if (savedInstanceState != null) {
+            ArrayList<Uri> savedUriList = savedInstanceState.getParcelableArrayList("imageUriList");
+            if (savedUriList != null) {
+                imageUriList = savedUriList;
+                if (imageUriList == null) {
+                   imageUriList = new ArrayList<>(); // 確保不為 null
+                }
+                imageAdapter.notifyDataSetChanged(); // 通知 Adapter 資料已更新
+            }
+        }
+    }
+
     // 檢查並處理相機權限
     private void openCamera() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
@@ -105,9 +159,9 @@ public class MainActivity extends AppCompatActivity {
     private void chooseImage() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
             // 如果已有權限，執行圖片選擇器
-            Intent intent = new Intent(Intent.ACTION_PICK);
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("image/*");
-            startActivityForResult(intent, PICK_IMAGE_CODE);
+            imagePickerLauncher.launch(intent);
 
         } else {
             // 如果沒有權限，請求權限
