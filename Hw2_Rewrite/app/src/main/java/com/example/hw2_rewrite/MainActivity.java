@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Camera;
 import android.graphics.Color;
 import android.net.Uri;
@@ -95,7 +96,6 @@ public class MainActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerView);
         imageAdapter = new ImageAdapter(imageUriList);
 
-
         // 設置RecyclerView佈局管理器
         GridLayoutManager gridLayoutManager = new GridLayoutManager(this, 2); // 每行兩列
         recyclerView.setLayoutManager(gridLayoutManager);
@@ -109,11 +109,19 @@ public class MainActivity extends AppCompatActivity {
         // 初始化圖片選擇器和相機拍攝結果處理
         imagePickerLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             if (result.getResultCode() == RESULT_OK) {
-                if (result.getData() != null && result.getData().getData() != null) {
-                    // 處理圖片選擇結果
-                    Uri selectedImageUri = result.getData().getData();
-                    if (selectedImageUri != null) {
-                        imageUriList.add(selectedImageUri); // 將圖片 URI 加入列表
+                Uri selectedImageUri = null;
+
+                // 處理圖片選擇結果
+                if (result.getData() != null) {
+                    selectedImageUri = result.getData().getData();
+                }
+
+                // 如果有選擇的圖片
+                if ( selectedImageUri != null) {
+                    // 獲取實際路徑，主要是為了配合小米手機問題
+                    Uri imagePath = getRealPathFromURI(selectedImageUri);
+                    if (imagePath != null) {
+                        imageUriList.add(imagePath); // 將圖片 URI 加入列表
                         imageAdapter.notifyItemInserted(imageUriList.size()-1);
                         Toast.makeText(this, "圖片選擇成功", Toast.LENGTH_SHORT).show();
                     }
@@ -184,7 +192,6 @@ public class MainActivity extends AppCompatActivity {
                 imageUriList = new ArrayList<>(); // 確保不為 null
             }
             photoUri = savedInstanceState.getParcelable("photoUri");
-
             imageAdapter.notifyDataSetChanged(); // 通知 Adapter 資料已更新
         }
     }
@@ -197,9 +204,14 @@ public class MainActivity extends AppCompatActivity {
 
         // 使用 Gson 將 ArrayList<Uri> 轉換成 JSON
         Gson gson = new Gson();
-        String json = gson.toJson(imageUriList);
 
-        System.out.println(json);
+        // 將 imageUris 轉換為 String 列表
+        List<String> uriStrings = new ArrayList<>();
+        for (Uri uri : imageUriList) {
+            uriStrings.add(uri.toString());
+        }
+
+        String json = gson.toJson(uriStrings);
 
         // 將 JSON 字符串儲存到 SharedPreferences
         editor.putString(IMAGE_URI_LIST_KEY, json);
@@ -214,12 +226,23 @@ public class MainActivity extends AppCompatActivity {
         // 使用 Gson 從 SharedPreferences 中讀取 JSON 字符串
         String json = sharedPreferences.getString(IMAGE_URI_LIST_KEY, null);
 
+        System.out.println("json = " + json);
+
         if (json != null) {
-            Gson gson =new Gson();
-            // 將 JSON 字符串轉換回 ArrayList<Uri>
-            imageUriList = gson.fromJson(json, new TypeToken<ArrayList<Uri>>(){}.getType());
-        } else {
-            imageUriList = new ArrayList<>(); // 如果沒有數據，則初始化為空列表
+            Gson gson = new Gson();
+            Type type = new TypeToken<List<String>>() {}.getType(); // 使用 List<String>
+            List<String> uriStrings = gson.fromJson(json, type); // 將 JSON 轉換回 List<String>
+
+            System.out.println("uriStrings = " + uriStrings);
+
+            imageUriList = new ArrayList<>();
+            if (uriStrings != null) {
+                for (String uriString : uriStrings) {
+                    imageUriList.add(Uri.parse(uriString)); // 將 String 轉換回 Uri
+                }
+            }
+
+            System.out.println("imageUriList = " + imageUriList);
         }
     }
 
@@ -288,7 +311,7 @@ public class MainActivity extends AppCompatActivity {
 
     // 執行圖片選擇器
     private void launchImagePicker(boolean limitedAccess) {
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        Intent intent = new Intent(Intent.ACTION_PICK);
         intent.setType("image/*");
         if (limitedAccess) {
             // 指定特定的目錄
@@ -334,5 +357,25 @@ public class MainActivity extends AppCompatActivity {
                 }
                 break;
         }
+    }
+
+    // 獲取圖片的路徑
+    public Uri getRealPathFromURI(Uri uri) {
+        String path = null;
+        // 判斷是否為 MIUI 手機
+        if (Build.MANUFACTURER.equalsIgnoreCase("xiaomi")) {
+            // 使用 MIUI 的方法獲取圖片路徑
+            Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+            if (cursor != null) {
+                int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+                cursor.moveToFirst();
+                path = cursor.getString(column_index);
+                cursor.close();
+            }
+        } else {
+            // 使用標準方法獲取圖片路徑
+            return uri;
+        }
+        return Uri.parse(path);
     }
 }
