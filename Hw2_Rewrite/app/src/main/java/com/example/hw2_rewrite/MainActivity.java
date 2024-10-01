@@ -1,6 +1,7 @@
 package com.example.hw2_rewrite;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Camera;
@@ -33,7 +34,13 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.List;
+
+import android.content.SharedPreferences;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -56,6 +63,9 @@ public class MainActivity extends AppCompatActivity {
     // 定義 ActivityResultLauncher 來處理圖片選擇結果
     private ActivityResultLauncher<Intent> imagePickerLauncher;
 
+    // 定義儲存的 key
+    private static final String IMAGE_URI_LIST_KEY = "image_uri_list";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -75,6 +85,9 @@ public class MainActivity extends AppCompatActivity {
         // 恢復保存的狀態
         if (savedInstanceState != null) {
             imageUriList = savedInstanceState.getParcelableArrayList("imageUriList");
+        } else {
+            // 恢復保存的圖片 Uri 列表
+            loadImageUriList();
         }
 
         // 初始化
@@ -96,8 +109,6 @@ public class MainActivity extends AppCompatActivity {
         // 初始化圖片選擇器和相機拍攝結果處理
         imagePickerLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             if (result.getResultCode() == RESULT_OK) {
-                System.out.println(result);
-                System.out.println(result.getData());
                 if (result.getData() != null && result.getData().getData() != null) {
                     // 處理圖片選擇結果
                     Uri selectedImageUri = result.getData().getData();
@@ -108,7 +119,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                 } else if (photoUri != null) {
                     // 處理拍攝結果
-                    System.out.println(photoUri);
                     imageUriList.add(photoUri);
                     imageAdapter.notifyItemInserted(imageUriList.size()-1);
                     Toast.makeText(this, "圖片拍攝成功", Toast.LENGTH_SHORT).show();
@@ -119,6 +129,20 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "操作取消", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // 活動暫停時保存圖片 Uri
+        saveImageUriList();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // 活動停止時保存圖片 Uri
+        saveImageUriList();
     }
 
     private void showPopMenu(View view) {
@@ -160,7 +184,42 @@ public class MainActivity extends AppCompatActivity {
                 imageUriList = new ArrayList<>(); // 確保不為 null
             }
             photoUri = savedInstanceState.getParcelable("photoUri");
+
             imageAdapter.notifyDataSetChanged(); // 通知 Adapter 資料已更新
+        }
+    }
+
+    // 在儲存圖片時將列表保存到 SharedPreferences
+    private void saveImageUriList() {
+        System.out.println("已儲存");
+        SharedPreferences sharedPreferences = getSharedPreferences("app_preferences", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+
+        // 使用 Gson 將 ArrayList<Uri> 轉換成 JSON
+        Gson gson = new Gson();
+        String json = gson.toJson(imageUriList);
+
+        System.out.println(json);
+
+        // 將 JSON 字符串儲存到 SharedPreferences
+        editor.putString(IMAGE_URI_LIST_KEY, json);
+        editor.apply();
+    }
+
+    // 從 SharedPreferences 讀取 Uri 列表
+    private void loadImageUriList() {
+        System.out.println("已讀取");
+        SharedPreferences sharedPreferences = getSharedPreferences("app_preferences", MODE_PRIVATE);
+
+        // 使用 Gson 從 SharedPreferences 中讀取 JSON 字符串
+        String json = sharedPreferences.getString(IMAGE_URI_LIST_KEY, null);
+
+        if (json != null) {
+            Gson gson =new Gson();
+            // 將 JSON 字符串轉換回 ArrayList<Uri>
+            imageUriList = gson.fromJson(json, new TypeToken<ArrayList<Uri>>(){}.getType());
+        } else {
+            imageUriList = new ArrayList<>(); // 如果沒有數據，則初始化為空列表
         }
     }
 
@@ -203,47 +262,51 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             // Android 14 及以上
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED) == PackageManager.PERMISSION_GRANTED) {
-                launchImagePicker();
+                launchImagePicker(false);
             } else {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED}, STORAGE_PERMISSION_CODE);
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_MEDIA_IMAGES}, STORAGE_PERMISSION_CODE);
             }
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.TIRAMISU) {
             // Android 13
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED) {
-                launchImagePicker();
+                launchImagePicker(false);
             } else {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_MEDIA_IMAGES}, STORAGE_PERMISSION_CODE);
             }
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             // Android 6.0 - 12
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                launchImagePicker();
+                launchImagePicker(false);
             } else {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
             }
         } else {
             // Android 6.0 以下，無需請求權限
-            launchImagePicker();
+            launchImagePicker(false);
         }
     }
 
-
     // 執行圖片選擇器
-    private void launchImagePicker() {
+    private void launchImagePicker(boolean limitedAccess) {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
+        if (limitedAccess) {
+            // 指定特定的目錄
+            Uri uri = Uri.parse("content://media/external/images/media");
+            intent.setDataAndType(uri, "image/*");
+        }
         imagePickerLauncher.launch(intent);
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
         switch (requestCode){
             case CAMERA_PERMISSION_CODE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     // 使用者已授予相機權限
                     Toast.makeText(this, "相機權限已授予", Toast.LENGTH_SHORT).show();
+                    openCamera();
                 } else {
                     // 使用者拒絕相機權限
                     Toast.makeText(this, "相機權限被拒絕", Toast.LENGTH_SHORT).show();
@@ -252,10 +315,22 @@ public class MainActivity extends AppCompatActivity {
             case STORAGE_PERMISSION_CODE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     // 使用者已授予存儲權限
-                    Toast.makeText(this, "存取權限已授予", Toast.LENGTH_SHORT).show();
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        Toast.makeText(this, "存取權限全部允許", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(this, "存取權限已授予", Toast.LENGTH_SHORT).show();
+                    }
+                    launchImagePicker(false);
                 } else {
-                    // 使用者拒絕存儲權限
-                    Toast.makeText(this, "存取權限被拒絕", Toast.LENGTH_SHORT).show();
+                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED) == PackageManager.PERMISSION_GRANTED) {
+                        // 使用者已授予有限存取
+                        Toast.makeText(this, "您已選擇有限存取，請選擇全部允許以繼續使用該功能", Toast.LENGTH_SHORT).show();
+                        // 重新請求完整存取的權限
+                        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_MEDIA_IMAGES}, STORAGE_PERMISSION_CODE);
+                    } else {
+                        // 使用者拒絕存儲權限
+                        Toast.makeText(this, "存取權限被拒絕", Toast.LENGTH_SHORT).show();
+                    }
                 }
                 break;
         }
