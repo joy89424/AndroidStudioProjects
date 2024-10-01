@@ -94,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
         // 初始化
         showPopMenuButton = findViewById(R.id.showPopMenuButton);
         recyclerView = findViewById(R.id.recyclerView);
-        imageAdapter = new ImageAdapter(imageUriList);
+        imageAdapter = new ImageAdapter(imageUriList, getSupportFragmentManager()); // 傳入 FragmentManager
 
         // 設置RecyclerView佈局管理器
         GridLayoutManager gridLayoutManager = new GridLayoutManager(this, 2); // 每行兩列
