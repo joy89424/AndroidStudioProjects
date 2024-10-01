@@ -1,5 +1,6 @@
 package com.example.hw2_rewrite;
 
+import android.app.Dialog;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -60,5 +61,19 @@ public class ImageDialogFragment extends DialogFragment {
         });
 
         return view;
+    }
+
+    @NonNull
+    @Override
+    public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
+        Dialog dialog = super.onCreateDialog(savedInstanceState);
+
+        dialog.setOnShowListener(dialogInterface -> {
+            int width = (int) (getResources().getDisplayMetrics().widthPixels * 0.90); // 90% 螢幕寬度
+            int height = (int) (getResources().getDisplayMetrics().heightPixels * 0.90); // 90% 螢幕高度
+            dialog.getWindow().setLayout(width, height);
+        });
+
+        return dialog;
     }
 }

@@ -265,7 +265,6 @@ public class MainActivity extends AppCompatActivity implements ImageAdapter.OnIt
         editor.apply();  // 提交變更
     }
 
-
     // 從 SharedPreferences 中恢復圖片 URI
     private void loadImageUrisFromPreference() {
         SharedPreferences sharedPreferences = getSharedPreferences("MyAppPreferences", MODE_PRIVATE);
