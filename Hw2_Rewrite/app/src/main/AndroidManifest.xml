@@ -56,6 +56,12 @@
             </intent-filter>
         </activity>
 
+        <!-- 錄音活動 -->
+        <activity
+            android:name=".RecordActivity"
+            android:exported="true">
+        </activity>
+
         <!-- FileProvider 用於處理相機拍攝的圖片保存 -->
         <provider
             android:name="androidx.core.content.FileProvider"

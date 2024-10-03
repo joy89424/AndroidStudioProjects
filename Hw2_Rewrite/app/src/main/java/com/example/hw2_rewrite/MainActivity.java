@@ -52,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
     // 定義 Uri 來儲存拍照或選擇的圖片
     private Uri photoUri;
     private ArrayList<Uri> imageUriList = new ArrayList<>();
+    private ArrayList<String> uniqueIds = new ArrayList<>(); // 用來存放唯一 ID 的新列表
 
     // 定義 RecyclerView 來顯示圖片列表
     private RecyclerView recyclerView;
@@ -66,6 +67,9 @@ public class MainActivity extends AppCompatActivity {
 
     // 定義儲存的 key
     private static final String IMAGE_URI_LIST_KEY = "image_uri_list";
+
+    // 定義 Gson 變量
+    private Gson gson;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,9 +87,13 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
+        // 初始化 Gson
+        gson = new Gson();  // 新增這行以初始化 gson
+
         // 恢復保存的狀態
         if (savedInstanceState != null) {
             imageUriList = savedInstanceState.getParcelableArrayList("imageUriList");
+            uniqueIds = savedInstanceState.getStringArrayList("uniqueIds");
         } else {
             // 恢復保存的圖片 Uri 列表
             loadImageUriList();
@@ -94,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
         // 初始化
         showPopMenuButton = findViewById(R.id.showPopMenuButton);
         recyclerView = findViewById(R.id.recyclerView);
-        imageAdapter = new ImageAdapter(imageUriList, getSupportFragmentManager()); // 傳入 FragmentManager
+        imageAdapter = new ImageAdapter(imageUriList, uniqueIds, getSupportFragmentManager()); // 傳入 FragmentManager
 
         // 設置RecyclerView佈局管理器
         GridLayoutManager gridLayoutManager = new GridLayoutManager(this, 2); // 每行兩列
@@ -122,13 +130,19 @@ public class MainActivity extends AppCompatActivity {
                     Uri imagePath = getRealPathFromURI(selectedImageUri);
                     if (imagePath != null) {
                         imageUriList.add(imagePath); // 將圖片 URI 加入列表
+                        String newUniqueId = "unique_id_for_image_" + System.currentTimeMillis(); // 生成唯一 ID
+                        uniqueIds.add(newUniqueId); // 將唯一 ID 加入列表
                         imageAdapter.notifyItemInserted(imageUriList.size()-1);
+                        imageAdapter.notifyItemInserted(uniqueIds.size()-1);
                         Toast.makeText(this, "圖片選擇成功", Toast.LENGTH_SHORT).show();
                     }
                 } else if (photoUri != null) {
                     // 處理拍攝結果
                     imageUriList.add(photoUri);
+                    String newUniqueId = "unique_id_for_image_" + System.currentTimeMillis(); // 生成唯一 ID
+                    uniqueIds.add(newUniqueId); // 將唯一 ID 加入列表
                     imageAdapter.notifyItemInserted(imageUriList.size()-1);
+                    imageAdapter.notifyItemInserted(uniqueIds.size()-1);
                     Toast.makeText(this, "圖片拍攝成功", Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(this, "操作失敗", Toast.LENGTH_SHORT).show();
@@ -181,6 +195,7 @@ public class MainActivity extends AppCompatActivity {
         super.onSaveInstanceState(outState);
         outState.putParcelableArrayList("imageUriList", imageUriList);
         outState.putParcelable("photoUri", photoUri);  // 保存 photoUri
+        outState.putStringArrayList("uniqueIds", uniqueIds);  // 保存 uniqueIds 列表
     }
 
     @Override
@@ -188,6 +203,7 @@ public class MainActivity extends AppCompatActivity {
         super.onRestoreInstanceState(savedInstanceState);
         if (savedInstanceState != null) {
             imageUriList = savedInstanceState.getParcelableArrayList("imageUriList");
+            uniqueIds = savedInstanceState.getStringArrayList("uniqueIds"); // 恢復 uniqueIds 列表
             if (imageUriList == null) {
                 imageUriList = new ArrayList<>(); // 確保不為 null
             }
@@ -215,6 +231,11 @@ public class MainActivity extends AppCompatActivity {
 
         // 將 JSON 字符串儲存到 SharedPreferences
         editor.putString(IMAGE_URI_LIST_KEY, json);
+
+        // 保存唯一 ID
+        String uniqueIdJson = gson.toJson(uniqueIds);
+        editor.putString("uniqueIds", uniqueIdJson);
+
         editor.apply();
     }
 
@@ -223,28 +244,37 @@ public class MainActivity extends AppCompatActivity {
         System.out.println("已讀取");
         SharedPreferences sharedPreferences = getSharedPreferences("app_preferences", MODE_PRIVATE);
 
-        // 使用 Gson 從 SharedPreferences 中讀取 JSON 字符串
+        // 加載圖片 URI
         String json = sharedPreferences.getString(IMAGE_URI_LIST_KEY, null);
-
-        System.out.println("json = " + json);
-
         if (json != null) {
-            Gson gson = new Gson();
-            Type type = new TypeToken<List<String>>() {}.getType(); // 使用 List<String>
-            List<String> uriStrings = gson.fromJson(json, type); // 將 JSON 轉換回 List<String>
-
-            System.out.println("uriStrings = " + uriStrings);
+            Type type = new TypeToken<List<String>>() {}.getType();
+            List<String> uriStrings = gson.fromJson(json, type);
 
             imageUriList = new ArrayList<>();
             if (uriStrings != null) {
                 for (String uriString : uriStrings) {
-                    imageUriList.add(Uri.parse(uriString)); // 將 String 轉換回 Uri
+                    imageUriList.add(Uri.parse(uriString));
                 }
             }
+        } else {
+            imageUriList = new ArrayList<>(); // 如果沒有數據，則初始化
+        }
 
-            System.out.println("imageUriList = " + imageUriList);
+        // 加載唯一 ID
+        String uniqueIdJson = sharedPreferences.getString("uniqueIds", null);
+        if (uniqueIdJson != null) {
+            Type uniqueIdType = new TypeToken<List<String>>() {}.getType();
+            List<String> uniqueIdStrings = gson.fromJson(uniqueIdJson, uniqueIdType);
+
+            uniqueIds = new ArrayList<>();
+            if (uniqueIdStrings != null) {
+                uniqueIds.addAll(uniqueIdStrings);
+            }
+        } else {
+            uniqueIds = new ArrayList<>(); // 如果沒有數據，則初始化
         }
     }
+
 
     // 檢查並處理相機權限
     private void openCamera() {

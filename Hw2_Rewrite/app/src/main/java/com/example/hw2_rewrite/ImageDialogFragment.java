@@ -1,6 +1,7 @@
 package com.example.hw2_rewrite;
 
 import android.app.Dialog;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -21,11 +22,15 @@ public class ImageDialogFragment extends DialogFragment {
     private Button editButton;
 
     private static final String ARG_IMAGE_URI = "image_uri";
+    private static final String ARG_UNIQUE_ID = "uniqueId";
 
-    public static ImageDialogFragment newInstance(String imageUri) {
+    private String uniqueId; // 將 uniqueId 定義為類的成員變數
+
+    public static ImageDialogFragment newInstance(String imageUri, String uniqueId) {
         ImageDialogFragment fragment = new ImageDialogFragment();
         Bundle args = new Bundle();
         args.putString(ARG_IMAGE_URI, imageUri);
+        args.putString(ARG_UNIQUE_ID, uniqueId); // 傳遞唯一 ID
         fragment.setArguments(args);
         return fragment;
     }
@@ -44,6 +49,7 @@ public class ImageDialogFragment extends DialogFragment {
         // 從 Bundle 中獲取傳遞過來的 URI，並顯示圖片
         if (getArguments() != null) {
             String imageUri = getArguments().getString(ARG_IMAGE_URI);
+            uniqueId = getArguments().getString(ARG_UNIQUE_ID); // 獲取唯一 ID
             fragmentImageView.setImageURI(Uri.parse(imageUri));
         }
 
@@ -54,6 +60,10 @@ public class ImageDialogFragment extends DialogFragment {
 
         recordButton.setOnClickListener(v -> {
             // 實現錄音功能
+            Intent intent = new Intent(getActivity(), RecordActivity.class);
+            intent.putExtra("imageUri", getArguments().getString(ARG_IMAGE_URI));
+            intent.putExtra("uniqueId", uniqueId); // 傳遞唯一 ID
+            startActivity(intent);
         });
 
         editButton.setOnClickListener(v -> {

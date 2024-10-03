@@ -18,7 +18,7 @@
         tools:ignore="MissingConstraints" />
 
     <Button
-        android:id="@+id/play_Button"
+        android:id="@+id/playAudioButton"
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:padding="0dp"
