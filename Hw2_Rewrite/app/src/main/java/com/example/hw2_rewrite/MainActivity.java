@@ -172,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
         // 活動停止時保存圖片 Uri
         saveImageUriList();
     }
-    
+
     private void showPopMenu(View view) {
         popupMenu = new PopupMenu(this, view);
         popupMenu.getMenuInflater().inflate(R.menu.menu_main, popupMenu.getMenu());

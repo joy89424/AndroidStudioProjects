@@ -60,6 +60,9 @@ public class MainActivity extends AppCompatActivity implements ImageAdapter.OnIt
     private List<Uri> imageUris = new ArrayList<>();
     private List<String> audioFilePaths = new ArrayList<>();
 
+    private MediaPlayer mediaPlayer;
+    private int currentlyPlayingPosition = -1;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -118,29 +121,34 @@ public class MainActivity extends AppCompatActivity implements ImageAdapter.OnIt
         imageAdapter.setOnItemClickListener(this);
 
         // 設置播放按鈕點擊監聽器
-        imageAdapter.setOnPlayButtonClickListener(((position, imageUri) -> {
+        imageAdapter.setOnPlayButtonClickListener((position, imageUri) -> {
+            // 如果當前播放的音頻與新音頻不同，則停止當前播放的音頻
+            if (mediaPlayer != null && currentlyPlayingPosition != position) {
+                mediaPlayer.stop();
+                mediaPlayer.release();
+                mediaPlayer = null;
+            }
+
             // 從 SharedPreferences 中取得圖片對應的錄音檔路徑
             SharedPreferences sharedPreferences = getSharedPreferences("RecordingData", MODE_PRIVATE);
             String imageUriString = imageUri.toString();
             String audioFilepath = sharedPreferences.getString(imageUriString, null);
 
             if (audioFilepath != null) {
-                // 開始播放對應的錄音檔
-                MediaPlayer mediaPlayer = new MediaPlayer();
+                // 開始播放新的錄音檔
+                mediaPlayer = new MediaPlayer();
                 try {
-                    // 設置錄音檔路徑為數據源
                     mediaPlayer.setDataSource(audioFilepath);
-
-                    // 准備播放器
                     mediaPlayer.prepare();
-
-                    // 開始播放
                     mediaPlayer.start();
+                    currentlyPlayingPosition = position;
                     Toast.makeText(MainActivity.this, "正在播放錄音", Toast.LENGTH_SHORT).show();
 
-                    // 播放完畢後自動釋放資源
-                    mediaPlayer.setOnCompletionListener(mediaPlayer1 -> {
+                    // 播放完畢後釋放資源
+                    mediaPlayer.setOnCompletionListener(mp -> {
                         mediaPlayer.release();
+                        mediaPlayer = null;
+                        currentlyPlayingPosition = -1;
                         Toast.makeText(MainActivity.this, "錄音播放完畢", Toast.LENGTH_SHORT).show();
                     });
                 } catch (IOException e) {
@@ -150,7 +158,7 @@ public class MainActivity extends AppCompatActivity implements ImageAdapter.OnIt
             } else {
                 Toast.makeText(MainActivity.this, "未找到對應的錄音檔", Toast.LENGTH_SHORT).show();
             }
-        }));
+        });
 
 
         // 初始化圖片選擇器的 ActivityResultLauncher
