@@ -2,16 +2,17 @@ package com.example.hw2_rewrite;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.graphics.Camera;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.PersistableBundle;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
@@ -23,6 +24,7 @@ import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -47,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
 
     // 定義相機和存儲權限的請求代碼
     private static final int CAMERA_PERMISSION_CODE = 100;
-    private static final int STORAGE_PERMISSION_CODE = 101;
+    private static final int STORAGE_READ_PERMISSION_CODE = 101;
 
     // 定義 Uri 來儲存拍照或選擇的圖片
     private Uri photoUri;
@@ -90,6 +92,9 @@ public class MainActivity extends AppCompatActivity {
         // 初始化 Gson
         gson = new Gson();  // 新增這行以初始化 gson
 
+        // 註冊廣播接收器
+        IntentFilter filter = new IntentFilter("com.example.hw2_rewrite.PHOTO_UPDATED");
+
         // 恢復保存的狀態
         if (savedInstanceState != null) {
             imageUriList = savedInstanceState.getParcelableArrayList("imageUriList");
@@ -114,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
             showPopMenu(v); // 按下按鈕後的行為
         });
 
-        // 初始化圖片選擇器和相機拍攝結果處理
+        // 初始化圖片選擇器、相機拍攝結果、編輯照片的處理
         imagePickerLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             if (result.getResultCode() == RESULT_OK) {
                 Uri selectedImageUri = null;
@@ -151,6 +156,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "操作取消", Toast.LENGTH_SHORT).show();
             }
         });
+
     }
 
     @Override
@@ -166,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
         // 活動停止時保存圖片 Uri
         saveImageUriList();
     }
-
+    
     private void showPopMenu(View view) {
         popupMenu = new PopupMenu(this, view);
         popupMenu.getMenuInflater().inflate(R.menu.menu_main, popupMenu.getMenu());
@@ -214,7 +220,6 @@ public class MainActivity extends AppCompatActivity {
 
     // 在儲存圖片時將列表保存到 SharedPreferences
     private void saveImageUriList() {
-        System.out.println("已儲存");
         SharedPreferences sharedPreferences = getSharedPreferences("app_preferences", MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
 
@@ -241,7 +246,6 @@ public class MainActivity extends AppCompatActivity {
 
     // 從 SharedPreferences 讀取 Uri 列表
     private void loadImageUriList() {
-        System.out.println("已讀取");
         SharedPreferences sharedPreferences = getSharedPreferences("app_preferences", MODE_PRIVATE);
 
         // 加載圖片 URI
@@ -274,7 +278,6 @@ public class MainActivity extends AppCompatActivity {
             uniqueIds = new ArrayList<>(); // 如果沒有數據，則初始化
         }
     }
-
 
     // 檢查並處理相機權限
     private void openCamera() {
@@ -317,21 +320,21 @@ public class MainActivity extends AppCompatActivity {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED) == PackageManager.PERMISSION_GRANTED) {
                 launchImagePicker(false);
             } else {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_MEDIA_IMAGES}, STORAGE_PERMISSION_CODE);
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_MEDIA_IMAGES}, STORAGE_READ_PERMISSION_CODE);
             }
         } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.TIRAMISU) {
             // Android 13
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED) {
                 launchImagePicker(false);
             } else {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_MEDIA_IMAGES}, STORAGE_PERMISSION_CODE);
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_MEDIA_IMAGES}, STORAGE_READ_PERMISSION_CODE);
             }
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             // Android 6.0 - 12
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
                 launchImagePicker(false);
             } else {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, STORAGE_READ_PERMISSION_CODE);
             }
         } else {
             // Android 6.0 以下，無需請求權限
@@ -365,7 +368,7 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, "相機權限被拒絕", Toast.LENGTH_SHORT).show();
                 }
                 break;
-            case STORAGE_PERMISSION_CODE:
+            case STORAGE_READ_PERMISSION_CODE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     // 使用者已授予存儲權限
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -379,7 +382,7 @@ public class MainActivity extends AppCompatActivity {
                         // 使用者已授予有限存取
                         Toast.makeText(this, "您已選擇有限存取，請選擇全部允許以繼續使用該功能", Toast.LENGTH_SHORT).show();
                         // 重新請求完整存取的權限
-                        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_MEDIA_IMAGES}, STORAGE_PERMISSION_CODE);
+                        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_MEDIA_IMAGES}, STORAGE_READ_PERMISSION_CODE);
                     } else {
                         // 使用者拒絕存儲權限
                         Toast.makeText(this, "存取權限被拒絕", Toast.LENGTH_SHORT).show();

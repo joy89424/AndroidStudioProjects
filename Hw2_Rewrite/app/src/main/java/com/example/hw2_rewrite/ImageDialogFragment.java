@@ -56,6 +56,7 @@ public class ImageDialogFragment extends DialogFragment {
         // 設置按鈕點擊事件
         newButton.setOnClickListener(v -> {
             // 實現新增功能
+            dismiss();
         });
 
         recordButton.setOnClickListener(v -> {
@@ -68,6 +69,10 @@ public class ImageDialogFragment extends DialogFragment {
 
         editButton.setOnClickListener(v -> {
             // 實現編輯相片功能
+            Intent intent = new Intent(getActivity(), EditPhotoActivity.class);
+            intent.putExtra("imageUri", getArguments().getString(ARG_IMAGE_URI));
+            intent.putExtra("uniqueId", uniqueId); // 傳遞唯一 ID
+            startActivity(intent);
         });
 
         return view;
