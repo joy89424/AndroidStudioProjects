@@ -2,7 +2,6 @@ package com.example.hw2_rewrite;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -91,9 +90,6 @@ public class MainActivity extends AppCompatActivity {
 
         // 初始化 Gson
         gson = new Gson();  // 新增這行以初始化 gson
-
-        // 註冊廣播接收器
-        IntentFilter filter = new IntentFilter("com.example.hw2_rewrite.PHOTO_UPDATED");
 
         // 恢復保存的狀態
         if (savedInstanceState != null) {
