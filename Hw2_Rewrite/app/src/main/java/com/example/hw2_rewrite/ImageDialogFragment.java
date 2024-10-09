@@ -1,6 +1,7 @@
 package com.example.hw2_rewrite;
 
 import android.app.Dialog;
+import android.content.Context;  // 確保導入 Context
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -10,9 +11,12 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.Fragment;
 
 public class ImageDialogFragment extends DialogFragment {
 
@@ -26,6 +30,16 @@ public class ImageDialogFragment extends DialogFragment {
 
     private String uniqueId; // 將 uniqueId 定義為類的成員變數
 
+    // ActivityResultLauncher 用於接收 EditPhotoActivity 的結果
+    private ActivityResultLauncher<Intent> editPhotoLauncher;
+
+    // 定義回調介面
+    public interface OnImageEditedListener {
+        void onImageEdited(String uniqueId, boolean isEdited);
+    }
+
+    private OnImageEditedListener listener; // 回調介面的實作變數
+
     public static ImageDialogFragment newInstance(String imageUri, String uniqueId) {
         ImageDialogFragment fragment = new ImageDialogFragment();
         Bundle args = new Bundle();
@@ -33,6 +47,17 @@ public class ImageDialogFragment extends DialogFragment {
         args.putString(ARG_UNIQUE_ID, uniqueId); // 傳遞唯一 ID
         fragment.setArguments(args);
         return fragment;
+    }
+
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        // 確保容器是 MainActivity，並實作回調介面
+        if (context instanceof OnImageEditedListener) {
+            listener = (OnImageEditedListener) context;
+        } else {
+            throw new RuntimeException(context.toString() + " must implement OnImageEditedListener");
+        }
     }
 
     @Nullable
@@ -72,7 +97,23 @@ public class ImageDialogFragment extends DialogFragment {
             Intent intent = new Intent(getActivity(), EditPhotoActivity.class);
             intent.putExtra("imageUri", getArguments().getString(ARG_IMAGE_URI));
             intent.putExtra("uniqueId", uniqueId); // 傳遞唯一 ID
-            startActivity(intent);
+            editPhotoLauncher.launch(intent);
+        });
+
+        // 註冊 ActivityResultLauncher
+        editPhotoLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+            if (result.getResultCode() == getActivity().RESULT_OK) {
+                // 獲取編輯結果
+                Intent data = result.getData();
+                if (data != null) {
+                    boolean isEdited = data.getBooleanExtra("isEdited", false);
+                    System.out.println("isEdited = " + isEdited);
+                    // 通知 MainActivity
+                    if (listener != null) {
+                        listener.onImageEdited(uniqueId, isEdited);
+                    }
+                }
+            }
         });
 
         return view;

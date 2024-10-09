@@ -44,7 +44,7 @@ import android.content.SharedPreferences;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ImageDialogFragment.OnImageEditedListener{
 
     // 定義相機和存儲權限的請求代碼
     private static final int CAMERA_PERMISSION_CODE = 100;
@@ -65,6 +65,8 @@ public class MainActivity extends AppCompatActivity {
 
     // 定義 ActivityResultLauncher 來處理圖片選擇結果
     private ActivityResultLauncher<Intent> imagePickerLauncher;
+    // 定義 ActivityResultLauncher 來處理相機拍攝結果
+    private ActivityResultLauncher<Intent> cameraLauncher;
 
     // 定義儲存的 key
     private static final String IMAGE_URI_LIST_KEY = "image_uri_list";
@@ -72,9 +74,12 @@ public class MainActivity extends AppCompatActivity {
     // 定義 Gson 變量
     private Gson gson;
 
+    String TAG = "MainActivity";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(TAG, "onCreate");
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
@@ -115,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
             showPopMenu(v); // 按下按鈕後的行為
         });
 
-        // 初始化圖片選擇器、相機拍攝結果、編輯照片的處理
+        // 初始化圖片選擇器
         imagePickerLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             if (result.getResultCode() == RESULT_OK) {
                 Uri selectedImageUri = null;
@@ -137,14 +142,6 @@ public class MainActivity extends AppCompatActivity {
                         imageAdapter.notifyItemInserted(uniqueIds.size()-1);
                         Toast.makeText(this, "圖片選擇成功", Toast.LENGTH_SHORT).show();
                     }
-                } else if (photoUri != null) {
-                    // 處理拍攝結果
-                    imageUriList.add(photoUri);
-                    String newUniqueId = "unique_id_for_image_" + System.currentTimeMillis(); // 生成唯一 ID
-                    uniqueIds.add(newUniqueId); // 將唯一 ID 加入列表
-                    imageAdapter.notifyItemInserted(imageUriList.size()-1);
-                    imageAdapter.notifyItemInserted(uniqueIds.size()-1);
-                    Toast.makeText(this, "圖片拍攝成功", Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(this, "操作失敗", Toast.LENGTH_SHORT).show();
                 }
@@ -153,11 +150,26 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // 相機拍攝結果
+        cameraLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+            if (result.getResultCode() == RESULT_OK) {
+                // 處理拍攝結果
+                imageUriList.add(photoUri);
+                String newUniqueId = "unique_id_for_image_" + System.currentTimeMillis(); // 生成唯一 ID
+                uniqueIds.add(newUniqueId); // 將唯一 ID 加入列表
+                imageAdapter.notifyItemInserted(imageUriList.size()-1);
+                imageAdapter.notifyItemInserted(uniqueIds.size()-1);
+                Toast.makeText(this, "圖片拍攝成功", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "操作取消", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        Log.d(TAG, "onPause");
         // 活動暫停時保存圖片 Uri
         saveImageUriList();
     }
@@ -165,8 +177,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
+        Log.d(TAG, "onStop");
         // 活動停止時保存圖片 Uri
         saveImageUriList();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "onDestroy");
     }
 
     private void showPopMenu(View view) {
@@ -284,7 +303,7 @@ public class MainActivity extends AppCompatActivity {
                 photoUri = createImageFile(); // 創建檔案用於保存照片
                 if (photoUri != null){
                     cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri); // 將 URI 傳遞給相機應用
-                    imagePickerLauncher.launch(cameraIntent); // 啟動相機
+                    cameraLauncher.launch(cameraIntent); // 啟動相機
                 } else {
                     Toast.makeText(this, "無法創建圖像文件", Toast.LENGTH_SHORT).show();
                 }
@@ -406,5 +425,25 @@ public class MainActivity extends AppCompatActivity {
             return uri;
         }
         return Uri.parse(path);
+    }
+
+    @Override
+    public void onImageEdited(String uniqueId, boolean isEdited) {
+        // 處理編輯的圖片
+        if (isEdited) {
+            Log.d(TAG, "onImageEdited: 照片已被更改");
+            // 更新 RecyclerView 的圖片
+            loadImageUriList();
+            int index = uniqueIds.indexOf(uniqueId);
+            imageAdapter.notifyItemChanged(index);
+
+            // 強制重新啟動 Activity
+            //Intent intent = getIntent();
+            Intent intent = new Intent(this, MainActivity.class);
+            finish();
+            startActivity(intent);
+        } else {
+            Log.d(TAG, "onImageEdited: 照片未被更改");
+        }
     }
 }

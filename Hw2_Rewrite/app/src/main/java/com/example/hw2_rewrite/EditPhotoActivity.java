@@ -11,6 +11,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Build;
@@ -46,13 +47,13 @@ import java.util.List;
 
 public class EditPhotoActivity extends AppCompatActivity {
 
-
     private String imageUriString;
     private String uniqueId;
     private ImageView showPhoto;
     private SeekBar zoomSeekbar;
     private Button saveButton;
     private FrameLayout frameLayout;
+    private float scaleFactor;
 
     private ArrayList<Uri> imageUriList = new ArrayList<>(); // 初始化 imageUriList
     private static final int STORAGE_WRITE_PERMISSION_CODE = 103;
@@ -88,12 +89,12 @@ public class EditPhotoActivity extends AppCompatActivity {
         loadImageUriListFromPreferences();
 
         // 設置 SeekBar 改變圖片大小
-        zoomSeekbar.setMax(100); // 最大值
-        zoomSeekbar.setProgress(50); // 初始比例 (100%)
+        zoomSeekbar.setMax(200); // 最大值
+        zoomSeekbar.setProgress(100); // 初始比例 (100%)
         zoomSeekbar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                float scaleFactor = progress / 50f; // 設置比例範圍為 0.5x 到 2x
+                scaleFactor = progress / 100f; // 設置比例範圍為 0.5x 到 2x
                 showPhoto.setScaleX(scaleFactor);
                 showPhoto.setScaleY(scaleFactor);
             }
@@ -129,25 +130,48 @@ public class EditPhotoActivity extends AppCompatActivity {
                 saveBitmapToStorage();
             }
         }
-
-        // 回傳 Intent 但還沒做
-        finish();  // 結束 EditPhotoActivity
     }
 
     private void saveBitmapToStorage() {
+        // 獲取原始的 Bitmap
         Bitmap originalBitmap = ((BitmapDrawable) showPhoto.getDrawable()).getBitmap();
-        int frameWidth = frameLayout.getWidth();
-        int frameHeight = frameLayout.getHeight();
+
+        // 創建放大或縮小的 Bitmap
+        int new_Width = Math.round(originalBitmap.getWidth()*scaleFactor);
+        int new_Height = Math.round(originalBitmap.getHeight()*scaleFactor);
+        Bitmap scaledBitmap = Bitmap.createScaledBitmap(originalBitmap, new_Width, new_Height, true);
 
         // 創建新的 Bitmap，並以白色填充背景
-        Bitmap editedBitmap = Bitmap.createBitmap(frameWidth, frameHeight, originalBitmap.getConfig());
+        int frameWidth = frameLayout.getWidth();
+        int frameHeight = frameLayout.getHeight();
+        Bitmap editedBitmap = Bitmap.createBitmap(frameWidth, frameHeight, scaledBitmap.getConfig());
         Canvas canvas = new Canvas(editedBitmap);
         canvas.drawColor(Color.WHITE); // 填充白色背景
 
-        // 將圖片繪製到新的 Bitmap，會自動裁切超出 FrameLayout 的部分
-        int left = (frameWidth - originalBitmap.getWidth()) / 2;
-        int top = (frameHeight - originalBitmap.getHeight()) / 2;
-        canvas.drawBitmap(originalBitmap, left, top, null);
+        // 計算繪製位置，確保圖片置中
+        int left = (frameWidth - scaledBitmap.getWidth()) / 2;
+        int top = (frameHeight - scaledBitmap.getHeight()) / 2;
+
+        // 繪製圖片，處理放大和縮小的情況
+        if (scaleFactor > 1) {
+            // 放大圖片，裁剪超出部分
+            Rect srcRect = new Rect(
+                    Math.max(0, -left),
+                    Math.max(0, -top),
+                    Math.min(scaledBitmap.getWidth(), frameWidth - left),
+                    Math.min(scaledBitmap.getHeight(), frameHeight - top)
+            );
+            Rect dstRect = new Rect(
+                    Math.max(0, left),
+                    Math.max(0, top),
+                    Math.min(frameWidth, left + scaledBitmap.getWidth()),
+                    Math.min(frameHeight, top + scaledBitmap.getHeight())
+            );
+            canvas.drawBitmap(scaledBitmap, srcRect, dstRect, null);
+        } else {
+            // 縮小圖片，填充白色背景
+            canvas.drawBitmap(scaledBitmap, left, top, null);
+        }
 
         // 確定儲存檔案的檔名，使用 uniqueId 來避免覆蓋
         String fileName = "edit_image_" + uniqueId + ".jpg";
@@ -190,6 +214,12 @@ public class EditPhotoActivity extends AppCompatActivity {
 
             // 通知圖片已成功儲存
             Toast.makeText(this, "圖片已儲存成功", Toast.LENGTH_SHORT).show();
+
+            // 回傳 Intent ，告知圖片已被更改
+            Intent resultIntent = new Intent();
+            resultIntent.putExtra("isEdited", true); // 根據實際情況設置
+            setResult(RESULT_OK, resultIntent);
+            finish(); // 結束 EditPhotoActivity
         } catch (IOException e) {
             e.printStackTrace();
             Toast.makeText(this, "儲存失敗", Toast.LENGTH_SHORT).show();
