@@ -133,98 +133,103 @@ public class EditPhotoActivity extends AppCompatActivity {
     }
 
     private void saveBitmapToStorage() {
-        // 獲取原始的 Bitmap
-        Bitmap originalBitmap = ((BitmapDrawable) showPhoto.getDrawable()).getBitmap();
-
-        // 創建放大或縮小的 Bitmap
-        int new_Width = Math.round(originalBitmap.getWidth()*scaleFactor);
-        int new_Height = Math.round(originalBitmap.getHeight()*scaleFactor);
-        Bitmap scaledBitmap = Bitmap.createScaledBitmap(originalBitmap, new_Width, new_Height, true);
-
-        // 創建新的 Bitmap，並以白色填充背景
-        int frameWidth = frameLayout.getWidth();
-        int frameHeight = frameLayout.getHeight();
-        Bitmap editedBitmap = Bitmap.createBitmap(frameWidth, frameHeight, scaledBitmap.getConfig());
-        Canvas canvas = new Canvas(editedBitmap);
-        canvas.drawColor(Color.WHITE); // 填充白色背景
-
-        // 計算繪製位置，確保圖片置中
-        int left = (frameWidth - scaledBitmap.getWidth()) / 2;
-        int top = (frameHeight - scaledBitmap.getHeight()) / 2;
-
-        // 繪製圖片，處理放大和縮小的情況
-        if (scaleFactor > 1) {
-            // 放大圖片，裁剪超出部分
-            Rect srcRect = new Rect(
-                    Math.max(0, -left),
-                    Math.max(0, -top),
-                    Math.min(scaledBitmap.getWidth(), frameWidth - left),
-                    Math.min(scaledBitmap.getHeight(), frameHeight - top)
-            );
-            Rect dstRect = new Rect(
-                    Math.max(0, left),
-                    Math.max(0, top),
-                    Math.min(frameWidth, left + scaledBitmap.getWidth()),
-                    Math.min(frameHeight, top + scaledBitmap.getHeight())
-            );
-            canvas.drawBitmap(scaledBitmap, srcRect, dstRect, null);
+        // 未拖曳時
+        if (scaleFactor == 0) {
+            Toast.makeText(this, "圖片未編輯", Toast.LENGTH_SHORT).show();
+            finish();
         } else {
-            // 縮小圖片，填充白色背景
-            canvas.drawBitmap(scaledBitmap, left, top, null);
-        }
+            // 獲取原始的 Bitmap
+            Bitmap originalBitmap = ((BitmapDrawable) showPhoto.getDrawable()).getBitmap();
 
-        // 確定儲存檔案的檔名，使用 uniqueId 來避免覆蓋
-        String fileName = "edit_image_" + uniqueId + ".jpg";
+            // 創建放大或縮小的 Bitmap
+            int new_Width = Math.round(originalBitmap.getWidth()*scaleFactor);
+            int new_Height = Math.round(originalBitmap.getHeight()*scaleFactor);
+            Bitmap scaledBitmap = Bitmap.createScaledBitmap(originalBitmap, new_Width, new_Height, true);
 
-        OutputStream fos;
+            // 創建新的 Bitmap，並以白色填充背景
+            int frameWidth = frameLayout.getWidth();
+            int frameHeight = frameLayout.getHeight();
+            Bitmap editedBitmap = Bitmap.createBitmap(frameWidth, frameHeight, scaledBitmap.getConfig());
+            Canvas canvas = new Canvas(editedBitmap);
+            canvas.drawColor(Color.WHITE); // 填充白色背景
 
-        try {
-            Uri imageUri = null;
-            // Android 10 (API 29) 以上使用 MediaStore 儲存圖片
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                ContentResolver resolver = getContentResolver();
-                ContentValues contentValues = new ContentValues();
-                contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
-                contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/EditedImages");
+            // 計算繪製位置，確保圖片置中
+            int left = (frameWidth - scaledBitmap.getWidth()) / 2;
+            int top = (frameHeight - scaledBitmap.getHeight()) / 2;
 
-                imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
-                if (imageUri != null) {
-                    fos = resolver.openOutputStream(imageUri);
-                } else {
-                    throw new IOException("Failed to create new MediaStore record.");
-                }
+            // 繪製圖片，處理放大和縮小的情況
+            if (scaleFactor > 1) {
+                // 放大圖片，裁剪超出部分
+                Rect srcRect = new Rect(
+                        Math.max(0, -left),
+                        Math.max(0, -top),
+                        Math.min(scaledBitmap.getWidth(), frameWidth - left),
+                        Math.min(scaledBitmap.getHeight(), frameHeight - top)
+                );
+                Rect dstRect = new Rect(
+                        Math.max(0, left),
+                        Math.max(0, top),
+                        Math.min(frameWidth, left + scaledBitmap.getWidth()),
+                        Math.min(frameHeight, top + scaledBitmap.getHeight())
+                );
+                canvas.drawBitmap(scaledBitmap, srcRect, dstRect, null);
             } else {
-                // Android 10 以下使用傳統方式儲存至外部存儲
-                File imagesDir = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "EditedImages");
-                if (!imagesDir.exists()) {
-                    imagesDir.mkdir();
-                }
-                File imageFile = new File(imagesDir, fileName);
-                fos = new FileOutputStream(imageFile);
-                imageUri = Uri.fromFile(imageFile);
+                // 縮小圖片，填充白色背景
+                canvas.drawBitmap(scaledBitmap, left, top, null);
             }
 
-            // 將 Bitmap 儲存為 JPEG
-            editedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
-            fos.flush();
-            fos.close();
+            // 確定儲存檔案的檔名，使用 uniqueId 來避免覆蓋
+            String fileName = "edit_image_" + uniqueId + ".jpg";
 
-            // 更新 imageUriList
-            updateImageUriList(imageUri);
+            OutputStream fos;
 
-            // 通知圖片已成功儲存
-            Toast.makeText(this, "圖片已儲存成功", Toast.LENGTH_SHORT).show();
+            try {
+                Uri imageUri = null;
+                // Android 10 (API 29) 以上使用 MediaStore 儲存圖片
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    ContentResolver resolver = getContentResolver();
+                    ContentValues contentValues = new ContentValues();
+                    contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+                    contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/EditedImages");
 
-            // 回傳 Intent ，告知圖片已被更改
-            Intent resultIntent = new Intent();
-            resultIntent.putExtra("isEdited", true); // 根據實際情況設置
-            setResult(RESULT_OK, resultIntent);
-            finish(); // 結束 EditPhotoActivity
-        } catch (IOException e) {
-            e.printStackTrace();
-            Toast.makeText(this, "儲存失敗", Toast.LENGTH_SHORT).show();
+                    imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
+                    if (imageUri != null) {
+                        fos = resolver.openOutputStream(imageUri);
+                    } else {
+                        throw new IOException("Failed to create new MediaStore record.");
+                    }
+                } else {
+                    // Android 10 以下使用傳統方式儲存至外部存儲
+                    File imagesDir = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "EditedImages");
+                    if (!imagesDir.exists()) {
+                        imagesDir.mkdir();
+                    }
+                    File imageFile = new File(imagesDir, fileName);
+                    fos = new FileOutputStream(imageFile);
+                    imageUri = Uri.fromFile(imageFile);
+                }
+
+                // 將 Bitmap 儲存為 JPEG
+                editedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+                fos.flush();
+                fos.close();
+
+                // 更新 imageUriList
+                updateImageUriList(imageUri);
+
+                // 通知圖片已成功儲存
+                Toast.makeText(this, "圖片已儲存成功", Toast.LENGTH_SHORT).show();
+
+                // 回傳 Intent ，告知圖片已被更改
+                Intent resultIntent = new Intent();
+                resultIntent.putExtra("isEdited", true); // 根據實際情況設置
+                setResult(RESULT_OK, resultIntent);
+                finish(); // 結束 EditPhotoActivity
+            } catch (IOException e) {
+                e.printStackTrace();
+                Toast.makeText(this, "儲存失敗", Toast.LENGTH_SHORT).show();
+            }
         }
-
     }
 
     private void updateImageUriList(Uri imageUri) {

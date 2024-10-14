@@ -107,7 +107,6 @@ public class ImageDialogFragment extends DialogFragment {
                 Intent data = result.getData();
                 if (data != null) {
                     boolean isEdited = data.getBooleanExtra("isEdited", false);
-                    System.out.println("isEdited = " + isEdited);
                     // 通知 MainActivity
                     if (listener != null) {
                         listener.onImageEdited(uniqueId, isEdited);

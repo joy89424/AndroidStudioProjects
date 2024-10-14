@@ -24,11 +24,19 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
     private ArrayList<Uri> imageUriList;
     private ArrayList<String> uniqueIds; // 存儲每張圖片的唯一 ID
     private FragmentManager fragmentManager;
+    MediaPlayer mediaPlayer;
+    private boolean isMediaPlayerPrepared = false; // 用來追踪 MediaPlayer 是否已經準備好
 
     public ImageAdapter(ArrayList<Uri> imageUriList, ArrayList<String> uniqueIds, FragmentManager fragmentManager) {
         this.imageUriList = imageUriList;
-        this.uniqueIds = uniqueIds; // 新增的參數
+        this.uniqueIds = uniqueIds;
         this.fragmentManager = fragmentManager;
+        this.mediaPlayer = new MediaPlayer(); // 初始化 MediaPlayer
+        this.mediaPlayer.setOnPreparedListener(mp -> {
+            isMediaPlayerPrepared = true; // 更新標誌
+            mediaPlayer.start(); // 當音頻準備好後開始播放
+        });
+        this.mediaPlayer.setOnCompletionListener(mp -> {isMediaPlayerPrepared = false;}); // 當播放結束時，重置標誌
     }
 
     @NonNull
@@ -55,11 +63,16 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
             String audioPath = sharedPreferences.getString("audio_for_image_" + uniqueId, null); // 使用唯一 ID 來獲取音頻路徑
 
             if (audioPath != null) {
-                MediaPlayer mediaPlayer = new MediaPlayer();
+                // 如果 MediaPlayer 正在播放或尚未準備好，先停止
+                if (mediaPlayer.isPlaying() || isMediaPlayerPrepared) {
+                    mediaPlayer.stop();
+                    mediaPlayer.reset(); // 重置 MediaPlayer 以便播放新文件
+                    isMediaPlayerPrepared = false;
+                }
+
                 try {
                     mediaPlayer.setDataSource(audioPath);
-                    mediaPlayer.prepare();
-                    mediaPlayer.start();
+                    mediaPlayer.prepareAsync(); // 異步準備 MediaPlayer
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -67,7 +80,6 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
                 Toast.makeText(holder.itemView.getContext(), "此圖片沒有聲音", Toast.LENGTH_SHORT).show();
             }
         });
-
     }
 
     @Override
