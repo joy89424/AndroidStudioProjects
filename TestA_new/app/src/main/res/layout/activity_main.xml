@@ -72,38 +72,11 @@
         android:background="#404040"
         android:paddingVertical="5dp">
 
-        <Button
-            android:id="@+id/buttonToFragment"
-            android:text="Fragment"
+        <Spinner
+            android:id="@+id/spinner"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:layout_marginLeft="5dp"
-            android:layout_marginRight="2.5dp"
-            style="@style/button_style"
-            android:textColor="@color/black"/>
-
-        <Button
-            android:id="@+id/buttonToDialogFragment"
-            android:text="Dialog\nFragment"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:layout_marginLeft="2.5dp"
-            android:layout_marginRight="2.5dp"
-            style="@style/button_style"
-            android:textColor="@color/black"/>
-
-        <Button
-            android:id="@+id/buttonToActivity"
-            android:text="Activity"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:layout_marginLeft="2.5dp"
-            android:layout_marginRight="5dp"
-            style="@style/button_style"
-            android:textColor="@color/black"/>
+            android:layout_weight="1"/>
 
         <Button
             android:id="@+id/buttonAdd"

@@ -10,8 +10,10 @@ import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.util.Log;
 import android.view.WindowInsetsController;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -35,14 +37,13 @@ public class MainActivity extends AppCompatActivity {
     private static final int STORAGE_READ_PERMISSION_CODE = 100;
 
     private ArrayList<Uri> imageUriList = new ArrayList<>();
+    private String[] spinnerArray = new String[]{"Fragment", "DialogFragment", "Activity"};;
 
-    private Button buttonToFragment;
-    private Button buttonToDialogFragment;
-    private Button buttonToActivity;
     private Button buttonAdd;
     private EditText editText;
     private RecyclerView recyclerView;
     private ImageAdapter imageAdapter;
+    private Spinner spinner;
 
     private ActivityResultLauncher<Intent> imagePickerLauncher;
 
@@ -74,33 +75,24 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // 初始化
-        buttonToFragment = findViewById(R.id.buttonToFragment);
-        buttonToDialogFragment = findViewById(R.id.buttonToDialogFragment);
-        buttonToActivity = findViewById(R.id.buttonToActivity);
         buttonAdd = findViewById(R.id.buttonAdd);
         editText = findViewById(R.id.editText);
         recyclerView = findViewById(R.id.recyclerView);
+        spinner = findViewById(R.id.spinner);
 
         imageAdapter = new ImageAdapter(imageUriList);
         recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
         recyclerView.setAdapter(imageAdapter);
 
-        buttonToFragment.setOnClickListener(v -> {
-            Toast.makeText(this, "Fragment", Toast.LENGTH_SHORT).show();
-        });
-
-        buttonToDialogFragment.setOnClickListener(v -> {
-            Toast.makeText(this, "DialogFragment", Toast.LENGTH_SHORT).show();
-        });
-
-        buttonToActivity.setOnClickListener(v -> {
-            Toast.makeText(this, "Activity", Toast.LENGTH_SHORT).show();
-        });
-
         buttonAdd.setOnClickListener(v -> {
             Toast.makeText(this, "AddPicture", Toast.LENGTH_SHORT).show();
             checkPermissionAndAddImage();
         });
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.custom_spinner_item, spinnerArray);
+        // 指定自定義的下拉菜單佈局樣式
+        adapter.setDropDownViewResource(R.layout.custom_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
 
         imagePickerLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             if (result.getData() != null) {
