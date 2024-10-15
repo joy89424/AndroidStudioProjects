@@ -70,7 +70,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         android:orientation="horizontal"
         android:background="#404040"
-        android:paddingVertical="5dp">
+        android:layout_margin="10dp">
 
         <Spinner
             android:id="@+id/spinner"
