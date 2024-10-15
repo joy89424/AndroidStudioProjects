@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.PersistableBundle;
 import android.util.Log;
 import android.view.WindowInsetsController;
 import android.widget.Button;
@@ -17,12 +18,15 @@ import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 
@@ -31,14 +35,14 @@ public class MainActivity extends AppCompatActivity {
     private static final int STORAGE_READ_PERMISSION_CODE = 100;
 
     private ArrayList<Uri> imageUriList = new ArrayList<>();
-    private ArrayList<String> editTextList = new ArrayList<>();
-    private String output;
 
     private Button buttonToFragment;
     private Button buttonToDialogFragment;
     private Button buttonToActivity;
     private Button buttonAdd;
     private EditText editText;
+    private RecyclerView recyclerView;
+    private ImageAdapter imageAdapter;
 
     private ActivityResultLauncher<Intent> imagePickerLauncher;
 
@@ -64,11 +68,22 @@ public class MainActivity extends AppCompatActivity {
             //getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR); // 黑色
         }
 
+        // 恢復保存的狀態
+        if (savedInstanceState != null) {
+            imageUriList = savedInstanceState.getParcelableArrayList("imageUriList");
+        }
+
         // 初始化
         buttonToFragment = findViewById(R.id.buttonToFragment);
         buttonToDialogFragment = findViewById(R.id.buttonToDialogFragment);
         buttonToActivity = findViewById(R.id.buttonToActivity);
         buttonAdd = findViewById(R.id.buttonAdd);
+        editText = findViewById(R.id.editText);
+        recyclerView = findViewById(R.id.recyclerView);
+
+        imageAdapter = new ImageAdapter(imageUriList);
+        recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
+        recyclerView.setAdapter(imageAdapter);
 
         buttonToFragment.setOnClickListener(v -> {
             Toast.makeText(this, "Fragment", Toast.LENGTH_SHORT).show();
@@ -89,10 +104,20 @@ public class MainActivity extends AppCompatActivity {
 
         imagePickerLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             if (result.getData() != null) {
+                String output = "";
                 Uri selectedImageUri = result.getData().getData();
-                Log.d("selectedImageUri", selectedImageUri.toString());
-                editTextList.add(selectedImageUri.toString());
-                System.out.println(editTextList);
+                imageUriList.add(selectedImageUri);
+                for (Uri uri : imageUriList) {
+                    output = output + "\n" + uri;
+                }
+
+                // 刪除第一排的換行
+                if (output.substring(0, 1).equals("\n")) {
+                    output = output.substring(1, output.length());
+                }
+
+                // 將圖片位址顯示在 editText 上
+                editText.setText(output);
             } else {
                 Toast.makeText(this, "操作取消", Toast.LENGTH_SHORT).show();
             }
@@ -159,6 +184,21 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 break;
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putParcelableArrayList("imageUriList", imageUriList);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        if (savedInstanceState != null) {
+            imageUriList = savedInstanceState.getParcelableArrayList("imageUriList");
+            if (imageUriList == null) imageUriList = new ArrayList<>();
         }
     }
 }
