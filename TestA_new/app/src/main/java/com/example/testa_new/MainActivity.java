@@ -37,9 +37,11 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity {
 
     private static final int STORAGE_READ_PERMISSION_CODE = 100;
+    private static final String TAG = "MainActivity";
 
     private ArrayList<Uri> imageUriList = new ArrayList<>();
     private String[] spinnerArray = new String[]{"Fragment", "DialogFragment", "Activity"};;
+    private Integer spinnerSelect;
 
     private Button buttonAdd;
     private EditText editText;
@@ -74,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
         // 恢復保存的狀態
         if (savedInstanceState != null) {
             imageUriList = savedInstanceState.getParcelableArrayList("imageUriList");
+            spinnerSelect = savedInstanceState.getInt("spinnerSelect");
         }
 
         // 初始化
@@ -82,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerView);
         spinner = findViewById(R.id.spinner);
 
-        imageAdapter = new ImageAdapter(imageUriList);
+        imageAdapter = new ImageAdapter(imageUriList, spinnerSelect);
         recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
         recyclerView.setAdapter(imageAdapter);
 
@@ -96,12 +99,13 @@ public class MainActivity extends AppCompatActivity {
         adapter.setDropDownViewResource(R.layout.custom_spinner_dropdown_item);
         spinner.setAdapter(adapter);
 
-        /*
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 String selectedItem = parent.getItemAtPosition(position).toString();
                 Toast.makeText(MainActivity.this, selectedItem + " selected", Toast.LENGTH_SHORT).show();
+                spinnerSelect = position;
+                Log.d(TAG, "onItemSelected: spinnerSelect = " + spinnerSelect);
             }
 
             @Override
@@ -109,13 +113,13 @@ public class MainActivity extends AppCompatActivity {
                 // Do nothing
             }
         });
-        */
 
         imagePickerLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             if (result.getData() != null) {
                 String output = "";
                 Uri selectedImageUri = result.getData().getData();
                 imageUriList.add(selectedImageUri);
+                Log.d(TAG, "imagePickerLauncher: imageUriList = " + imageUriList);
                 for (Uri uri : imageUriList) {
                     output = output + "\n" + uri;
                 }
@@ -131,7 +135,6 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "操作取消", Toast.LENGTH_SHORT).show();
             }
         });
-
     }
 
     private void checkPermissionAndAddImage() {
@@ -200,6 +203,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putParcelableArrayList("imageUriList", imageUriList);
+        outState.putInt("spinnerSelect", spinnerSelect);
     }
 
     @Override
@@ -207,6 +211,7 @@ public class MainActivity extends AppCompatActivity {
         super.onRestoreInstanceState(savedInstanceState);
         if (savedInstanceState != null) {
             imageUriList = savedInstanceState.getParcelableArrayList("imageUriList");
+            spinnerSelect = savedInstanceState.getInt("spinnerSelect");
             if (imageUriList == null) imageUriList = new ArrayList<>();
         }
     }
