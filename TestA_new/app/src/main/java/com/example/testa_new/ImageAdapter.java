@@ -1,6 +1,7 @@
 package com.example.testa_new;
 
 import android.net.Uri;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 
 public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHolder> {
 
+    private static final String TAG = "ImageAdapter";
     private ArrayList<Uri> imageUriList;
     private Integer spinnerSelect;
 
@@ -40,9 +42,9 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
         holder.textView.setText("Picture " + (position + 1) + " : " + splitImageString[splitImageString.length-1]); // 修改 textView 文字
 
         holder.imageView.setOnClickListener(v -> {
+            Log.d(TAG, "onBindViewHolder: spinnerSelect = " + spinnerSelect);
             switch (spinnerSelect) {
                 case 0:
-                    System.out.println("按下圖片，並已選擇了 Fragment");
                     // open Fragment
                     MyFragment myFragment = MyFragment.newInstance(imageUriList, position);
                     FragmentManager fragmentManager = ((AppCompatActivity) v.getContext()).getSupportFragmentManager();
@@ -66,6 +68,11 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
     @Override
     public int getItemCount() {
         return imageUriList.size();
+    }
+
+    public void updateSpinnerSelect(Integer spinnerSelect) {
+        this.spinnerSelect = spinnerSelect;
+        notifyDataSetChanged(); // 通知 Adapter 更新資料
     }
 
     public class ImageViewHolder extends RecyclerView.ViewHolder {

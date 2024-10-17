@@ -105,6 +105,7 @@ public class MainActivity extends AppCompatActivity {
                 String selectedItem = parent.getItemAtPosition(position).toString();
                 Toast.makeText(MainActivity.this, selectedItem + " selected", Toast.LENGTH_SHORT).show();
                 spinnerSelect = position;
+                imageAdapter.updateSpinnerSelect(spinnerSelect);  // 更新 Adapter 的 spinnerSelect 值
                 Log.d(TAG, "onItemSelected: spinnerSelect = " + spinnerSelect);
             }
 
@@ -114,23 +115,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // 初始化圖片選擇器
         imagePickerLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             if (result.getData() != null) {
-                String output = "";
                 Uri selectedImageUri = result.getData().getData();
                 imageUriList.add(selectedImageUri);
                 Log.d(TAG, "imagePickerLauncher: imageUriList = " + imageUriList);
-                for (Uri uri : imageUriList) {
-                    output = output + "\n" + uri;
-                }
-
-                // 刪除第一排的換行
-                if (output.substring(0, 1).equals("\n")) {
-                    output = output.substring(1, output.length());
-                }
-
-                // 將圖片位址顯示在 editText 上
-                editText.setText(output);
             } else {
                 Toast.makeText(this, "操作取消", Toast.LENGTH_SHORT).show();
             }
